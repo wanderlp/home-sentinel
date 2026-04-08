@@ -7,11 +7,11 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
-    "dev:renderer": "vite",
-    "dev:electron": "wait-on tcp:5173 && npm run build:main && electron .",
+    "dev:renderer": "vite src/app/renderer --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:electron": "wait-on http-get://127.0.0.1:5173 && npm run build:main && electron .",
     "build": "npm run clean && npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json",
-    "build:renderer": "vite build",
+    "build:renderer": "vite build src/app/renderer --outDir ../../../dist/renderer",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.preload.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
   },
   "dependencies": {
