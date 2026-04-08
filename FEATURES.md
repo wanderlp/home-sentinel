@@ -80,3 +80,15 @@ Para cada dispositivo se muestra:
 - estado activo o inactivo;
 - si es nuevo o conocido;
 - tipo de dispositivo estimado.
+
+## Integración con Electron
+
+Existe un canal IPC:
+
+- `scan-devices`
+
+Flujo:
+
+- el renderer invoca el canal;
+- el proceso principal ejecuta `DeviceService.scanAndDetect()`;
+- el resultado se devuelve al renderer.

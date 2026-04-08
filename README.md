@@ -55,18 +55,6 @@ Contiene tipos compartidos entre capas.
 
 [Ver el detalle completo de funcionalidades →](./FEATURES.md)
 
-## Integración con Electron
-
-Existe un canal IPC:
-
-- `scan-devices`
-
-Flujo:
-
-- el renderer invoca el canal;
-- el proceso principal ejecuta `DeviceService.scanAndDetect()`;
-- el resultado se devuelve al renderer.
-
 ## Desarrollo
 
 Scripts principales:
@@ -82,6 +70,6 @@ Scripts principales:
 
 Home Sentinel es un proyecto en desarrollo acelerado de software: una aplicación de escritorio para descubrimiento y monitoreo de red local construida en colaboración con Codex, manteniendo siempre el control técnico y funcional dentro del proyecto. La arquitectura, la lógica de red, la persistencia, la integración con Electron y la interfaz han sido trabajadas de forma iterativa, cuidando que cada cambio tenga intención y se integre de manera modular.
 
-El proyecto nace en Guatemala y el idioma principal del proyecto es el español. La documentación, los issues, los commits, los PRs y la comunicación general se mantienen en español, con atención especial a la ortografía, la puntuación y el uso correcto de tildes.
+El proyecto nace en Guatemala 🇬🇹 y está abierto a colaboraciones de todo el mundo. El idioma principal del proyecto (código, issues, PRs y discusiones) es el español.
 
-> En desarrollo activo: Home Sentinel seguirá creciendo con nuevas capacidades de identificación, monitoreo y análisis de dispositivos en la red local. Si deseas continuar evolucionándolo, la base actual ya está preparada para escalar por etapas.
+> 🚧 **En desarrollo activo** — el proyecto crece con nuevas funcionalidades y mejoras de forma continua. Si tienes ideas o quieres contribuir, eres bienvenido.
