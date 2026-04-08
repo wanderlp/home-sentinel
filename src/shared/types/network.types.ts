@@ -1,7 +1,7 @@
 export interface Device {
   ip: string;
   activo: boolean;
-  macAddress?: string;
+  mac?: string;
 }
 
 export interface NetworkDevice {

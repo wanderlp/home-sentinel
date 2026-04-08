@@ -6,6 +6,7 @@ import type { Device } from '../../shared/types';
 const execFileAsync = promisify(execFile);
 const WINDOWS_PING_TIMEOUT_MS = 1000;
 const DEFAULT_CONCURRENCY = 25;
+const ARP_ENTRY_REGEX = /^\s*(\d{1,3}(?:\.\d{1,3}){3})\s+([0-9a-f-]{17})\s+\S+\s*$/i;
 
 interface LocalNetworkInfo {
   ip: string;
@@ -20,8 +21,13 @@ export class HomeSentinelScanner {
 
     const localNetwork = this.getLocalNetworkInfo();
     const hostIps = this.getHostIpsFromSubnet(localNetwork.ip, localNetwork.netmask);
+    const activeDevices = await this.scanIpBatch(hostIps);
+    const macByIp = await this.getArpTableMap();
 
-    return this.scanIpBatch(hostIps);
+    return activeDevices.map((device) => ({
+      ...device,
+      mac: macByIp.get(device.ip)
+    }));
   }
 
   private ensureWindowsSupport(): void {
@@ -76,7 +82,7 @@ export class HomeSentinelScanner {
     const octets = ipAddress.split('.').map((segment) => Number.parseInt(segment, 10));
 
     if (octets.length !== 4 || octets.some((octet) => Number.isNaN(octet) || octet < 0 || octet > 255)) {
-      throw new Error(`Dirección IPv4 inválida: ${ipAddress}`);
+      throw new Error(`Direccion IPv4 invalida: ${ipAddress}`);
     }
 
     return (
@@ -122,5 +128,36 @@ export class HomeSentinelScanner {
         activo: false
       };
     }
+  }
+
+  private async getArpTableMap(): Promise<Map<string, string>> {
+    try {
+      const { stdout } = await execFileAsync('arp', ['-a']);
+      return this.parseArpTable(stdout);
+    } catch {
+      return new Map();
+    }
+  }
+
+  private parseArpTable(arpOutput: string): Map<string, string> {
+    const macByIp = new Map<string, string>();
+    const lines = arpOutput.split(/\r?\n/);
+
+    for (const line of lines) {
+      const entry = line.match(ARP_ENTRY_REGEX);
+
+      if (!entry) {
+        continue;
+      }
+
+      const [, ip, mac] = entry;
+      macByIp.set(ip, this.normalizeMacAddress(mac));
+    }
+
+    return macByIp;
+  }
+
+  private normalizeMacAddress(macAddress: string): string {
+    return macAddress.toLowerCase().replace(/-/g, ':');
   }
 }
