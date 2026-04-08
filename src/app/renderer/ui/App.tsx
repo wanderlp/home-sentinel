@@ -91,6 +91,10 @@ export function App() {
                       <strong>{device.ip}</strong>
                     </div>
                     <div>
+                      <span className="device-label">Nombre</span>
+                      <strong>{device.hostname ?? 'No disponible'}</strong>
+                    </div>
+                    <div>
                       <span className="device-label">MAC</span>
                       <strong>{device.mac ?? 'No disponible'}</strong>
                     </div>

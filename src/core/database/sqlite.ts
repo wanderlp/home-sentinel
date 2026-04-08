@@ -41,11 +41,14 @@ async function initializeSchema(database: sqlite3.Database): Promise<void> {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ip TEXT NOT NULL,
         mac TEXT UNIQUE,
+        hostname TEXT,
         firstSeen TEXT NOT NULL,
         lastSeen TEXT NOT NULL
       );
     `
   );
+
+  await ensureColumnExists(database, 'devices', 'hostname', 'TEXT');
 }
 
 function openDatabase(databasePath: string): Promise<sqlite3.Database> {
@@ -93,4 +96,27 @@ export function allRows<Row>(
       resolve((rows as Row[]) ?? []);
     });
   });
+}
+
+async function ensureColumnExists(
+  database: sqlite3.Database,
+  tableName: string,
+  columnName: string,
+  columnDefinition: string
+): Promise<void> {
+  const columns = await allRows<{ name: string }>(
+    database,
+    `PRAGMA table_info(${tableName})`
+  );
+
+  const hasColumn = columns.some((column) => column.name === columnName);
+
+  if (hasColumn) {
+    return;
+  }
+
+  await runStatement(
+    database,
+    `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`
+  );
 }

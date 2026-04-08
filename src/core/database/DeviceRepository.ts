@@ -6,6 +6,7 @@ interface DeviceRow {
   id: number;
   ip: string;
   mac: string;
+  hostname?: string | null;
   firstSeen: string;
   lastSeen: string;
 }
@@ -35,13 +36,14 @@ export class DeviceRepository {
         await runStatement(
           database,
           `
-            INSERT INTO devices (ip, mac, firstSeen, lastSeen)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO devices (ip, mac, hostname, firstSeen, lastSeen)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(mac) DO UPDATE SET
               ip = excluded.ip,
+              hostname = excluded.hostname,
               lastSeen = excluded.lastSeen
           `,
-          [device.ip, device.mac, timestamp, timestamp]
+          [device.ip, device.mac, device.hostname ?? null, timestamp, timestamp]
         );
       }
 
@@ -63,7 +65,7 @@ export class DeviceRepository {
       const rows = await allRows<DeviceRow>(
         database,
         `
-          SELECT id, ip, mac, firstSeen, lastSeen
+          SELECT id, ip, mac, hostname, firstSeen, lastSeen
           FROM devices
           ORDER BY lastSeen DESC
         `
@@ -82,6 +84,7 @@ export class DeviceRepository {
       id: row.id,
       ip: row.ip,
       mac: row.mac,
+      hostname: row.hostname ?? undefined,
       firstSeen: row.firstSeen,
       lastSeen: row.lastSeen
     };

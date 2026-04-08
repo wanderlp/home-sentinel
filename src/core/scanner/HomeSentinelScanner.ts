@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { reverse } from 'node:dns/promises';
 import { networkInterfaces } from 'node:os';
 import { promisify } from 'node:util';
 import type { Device } from '../../shared/types';
@@ -7,6 +8,7 @@ const execFileAsync = promisify(execFile);
 const WINDOWS_PING_TIMEOUT_MS = 1000;
 const DEFAULT_CONCURRENCY = 25;
 const ARP_ENTRY_REGEX = /^\s*(\d{1,3}(?:\.\d{1,3}){3})\s+([0-9a-f-]{17})\s+\S+\s*$/i;
+const WINDOWS_PING_HOSTNAME_REGEX = /Haciendo ping a\s+([^\s\[]+)\s+\[|\bPinging\s+([^\s\[]+)\s+\[/i;
 
 interface LocalNetworkInfo {
   ip: string;
@@ -23,8 +25,9 @@ export class HomeSentinelScanner {
     const hostIps = this.getHostIpsFromSubnet(localNetwork.ip, localNetwork.netmask);
     const activeDevices = await this.scanIpBatch(hostIps);
     const macByIp = await this.getArpTableMap();
+    const devicesWithHostname = await this.enrichDevicesWithHostname(activeDevices);
 
-    return activeDevices.map((device) => ({
+    return devicesWithHostname.map((device) => ({
       ...device,
       mac: macByIp.get(device.ip)
     }));
@@ -128,6 +131,63 @@ export class HomeSentinelScanner {
         activo: false
       };
     }
+  }
+
+  private async enrichDevicesWithHostname(devices: Device[]): Promise<Device[]> {
+    const enrichedDevices: Device[] = [];
+
+    for (let index = 0; index < devices.length; index += this.concurrency) {
+      const batch = devices.slice(index, index + this.concurrency);
+      const batchResults = await Promise.all(
+        batch.map(async (device) => ({
+          ...device,
+          hostname: await this.resolveHostname(device.ip)
+        }))
+      );
+
+      enrichedDevices.push(...batchResults);
+    }
+
+    return enrichedDevices;
+  }
+
+  private async resolveHostname(ip: string): Promise<string | undefined> {
+    const dnsHostname = await this.resolveHostnameFromReverseDns(ip);
+
+    if (dnsHostname) {
+      return dnsHostname;
+    }
+
+    return this.resolveHostnameFromPing(ip);
+  }
+
+  private async resolveHostnameFromReverseDns(ip: string): Promise<string | undefined> {
+    try {
+      const hostnames = await reverse(ip);
+      return hostnames[0];
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async resolveHostnameFromPing(ip: string): Promise<string | undefined> {
+    try {
+      const { stdout } = await execFileAsync('ping', ['-a', '-n', '1', '-w', String(WINDOWS_PING_TIMEOUT_MS), ip]);
+      return this.parseHostnameFromPing(stdout, ip);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private parseHostnameFromPing(pingOutput: string, ip: string): string | undefined {
+    const match = pingOutput.match(WINDOWS_PING_HOSTNAME_REGEX);
+    const hostname = match?.[1] ?? match?.[2];
+
+    if (!hostname || hostname === ip) {
+      return undefined;
+    }
+
+    return hostname;
   }
 
   private async getArpTableMap(): Promise<Map<string, string>> {

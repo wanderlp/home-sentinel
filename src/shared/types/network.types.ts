@@ -2,6 +2,7 @@ export interface Device {
   ip: string;
   activo: boolean;
   mac?: string;
+  hostname?: string;
 }
 
 export interface DetectedDevice extends Device {
@@ -13,6 +14,7 @@ export interface StoredDevice {
   id: number;
   ip: string;
   mac: string;
+  hostname?: string;
   firstSeen: string;
   lastSeen: string;
 }
