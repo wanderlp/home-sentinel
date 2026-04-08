@@ -53,26 +53,7 @@ Contiene tipos compartidos entre capas.
 - Integración entre Electron, IPC y lógica de negocio.
 - Interfaz inicial para ejecutar escaneos y mostrar resultados.
 
-[Ver más](./FEATURES.md)
-
-## Interfaz actual
-
-La interfaz del renderer ya permite:
-
-- ejecutar el escaneo con el botón `Escanear red`;
-- mostrar estado de carga;
-- manejar errores básicos;
-- listar los dispositivos detectados.
-
-Para cada dispositivo se muestra:
-
-- IP;
-- nombre del dispositivo;
-- MAC;
-- fabricante;
-- estado activo o inactivo;
-- si es nuevo o conocido;
-- tipo de dispositivo estimado.
+[Ver el detalle completo de funcionalidades →](./FEATURES.md)
 
 ## Integración con Electron
 
@@ -96,3 +77,11 @@ Scripts principales:
   Compila `main`, `preload` y `renderer`.
 - `npm run typecheck`
   Valida tipos con TypeScript.
+
+## Más sobre este proyecto
+
+Home Sentinel es un proyecto en desarrollo acelerado de software: una aplicación de escritorio para descubrimiento y monitoreo de red local construida en colaboración con Codex, manteniendo siempre el control técnico y funcional dentro del proyecto. La arquitectura, la lógica de red, la persistencia, la integración con Electron y la interfaz han sido trabajadas de forma iterativa, cuidando que cada cambio tenga intención y se integre de manera modular.
+
+El proyecto nace en Guatemala y el idioma principal del proyecto es el español. La documentación, los issues, los commits, los PRs y la comunicación general se mantienen en español, con atención especial a la ortografía, la puntuación y el uso correcto de tildes.
+
+> En desarrollo activo: Home Sentinel seguirá creciendo con nuevas capacidades de identificación, monitoreo y análisis de dispositivos en la red local. Si deseas continuar evolucionándolo, la base actual ya está preparada para escalar por etapas.
