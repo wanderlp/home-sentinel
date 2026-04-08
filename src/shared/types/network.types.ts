@@ -1,3 +1,9 @@
+export interface Device {
+  ip: string;
+  activo: boolean;
+  macAddress?: string;
+}
+
 export interface NetworkDevice {
   id: string;
   ipAddress: string;
