@@ -1,0 +1,33 @@
+{
+  "name": "home-sentinel",
+  "version": "0.1.0",
+  "description": "Desktop application for monitoring devices connected to a local network.",
+  "private": true,
+  "main": "dist/app/main/index.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:electron": "wait-on tcp:5173 && npm run build:main && electron .",
+    "build": "npm run clean && npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json",
+    "build:renderer": "vite build",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.preload.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "concurrently": "^9.2.1",
+    "electron": "^37.0.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7",
+    "wait-on": "^9.0.1"
+  }
+}

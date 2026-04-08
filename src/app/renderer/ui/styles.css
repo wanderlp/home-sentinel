@@ -1,0 +1,82 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(54, 90, 120, 0.5), transparent 40%),
+    linear-gradient(180deg, #07111f 0%, #0b1729 100%);
+  color: #e8f1ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.hero-card {
+  width: min(720px, 100%);
+  padding: 32px;
+  border: 1px solid rgba(159, 193, 255, 0.14);
+  border-radius: 24px;
+  background: rgba(6, 15, 29, 0.82);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #79b8ff;
+}
+
+.hero-card h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.description {
+  margin: 16px 0 0;
+  max-width: 56ch;
+  color: #b6c7e5;
+  line-height: 1.6;
+}
+
+.status-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.status-grid article {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(121, 184, 255, 0.08);
+  border: 1px solid rgba(121, 184, 255, 0.1);
+}
+
+.status-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: #9fb8dc;
+  font-size: 0.9rem;
+}
+
+.status-grid strong {
+  font-size: 1.4rem;
+}
