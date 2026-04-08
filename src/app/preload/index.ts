@@ -1,5 +1,5 @@
-import { contextBridge } from 'electron';
-import type { AppBootstrapState } from '../../shared/types/app.types';
+import { contextBridge, ipcRenderer } from 'electron';
+import type { AppBootstrapState, DetectedDevice } from '../../shared/types';
 
 const bootstrapState: AppBootstrapState = {
   status: 'idle',
@@ -7,5 +7,6 @@ const bootstrapState: AppBootstrapState = {
 };
 
 contextBridge.exposeInMainWorld('homeSentinel', {
-  getBootstrapState: (): AppBootstrapState => bootstrapState
+  getBootstrapState: (): AppBootstrapState => bootstrapState,
+  scanDevices: (): Promise<DetectedDevice[]> => ipcRenderer.invoke('scan-devices')
 });

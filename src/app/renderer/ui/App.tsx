@@ -1,9 +1,10 @@
-import type { AppBootstrapState } from '../../../shared/types/app.types';
+import type { AppBootstrapState, DetectedDevice } from '../../../shared/types';
 
 declare global {
   interface Window {
     homeSentinel: {
       getBootstrapState: () => AppBootstrapState;
+      scanDevices: () => Promise<DetectedDevice[]>;
     };
   }
 }
