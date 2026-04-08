@@ -4,6 +4,11 @@ export interface Device {
   mac?: string;
 }
 
+export interface DetectedDevice extends Device {
+  conocido: boolean;
+  nuevo: boolean;
+}
+
 export interface StoredDevice {
   id: number;
   ip: string;
