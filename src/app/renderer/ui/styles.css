@@ -113,12 +113,44 @@ body {
   margin-top: 32px;
 }
 
+.results-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+}
+
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.filter-field span {
+  color: #9fb8dc;
+  font-size: 0.85rem;
+}
+
+.filter-field select {
+  padding: 10px 12px;
+  border: 1px solid rgba(121, 184, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(8, 20, 36, 0.9);
+  color: #e8f1ff;
 }
 
 .results-header h2 {
@@ -155,6 +187,7 @@ body {
   border-radius: 20px;
   border: 1px solid rgba(121, 184, 255, 0.12);
   background: rgba(9, 20, 38, 0.85);
+  cursor: pointer;
 }
 
 .device-card.is-new {
@@ -163,6 +196,11 @@ body {
 
 .device-card.is-known {
   border-color: rgba(121, 184, 255, 0.16);
+}
+
+.device-card.is-selected {
+  border-color: rgba(121, 184, 255, 0.42);
+  box-shadow: 0 0 0 1px rgba(121, 184, 255, 0.14);
 }
 
 .device-main {
@@ -243,6 +281,48 @@ body {
   text-transform: capitalize;
 }
 
+.badge-changed {
+  background: rgba(255, 180, 102, 0.14);
+  color: #ffc680;
+}
+
+.detail-panel {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 22px;
+  border: 1px solid rgba(121, 184, 255, 0.12);
+  border-radius: 20px;
+  background: rgba(8, 18, 33, 0.9);
+}
+
+.detail-panel h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.detail-copy {
+  margin: 0;
+  color: #b6c7e5;
+  line-height: 1.6;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.detail-grid strong {
+  display: block;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.detail-section {
+  display: grid;
+  gap: 8px;
+}
+
 @media (max-width: 640px) {
   .app-shell {
     padding: 20px;
@@ -255,6 +335,10 @@ body {
   .results-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .results-layout {
+    grid-template-columns: 1fr;
   }
 
   .scan-button {

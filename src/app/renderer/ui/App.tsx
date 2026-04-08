@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { AppBootstrapState, DetectedDevice } from '../../../shared/types';
 
+type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
+
 declare global {
   interface Window {
     homeSentinel: {
@@ -15,6 +17,32 @@ export function App() {
   const [devices, setDevices] = useState<DetectedDevice[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+  const [typeFilter, setTypeFilter] = useState<string>('todos');
+  const [selectedDeviceKey, setSelectedDeviceKey] = useState<string | null>(null);
+
+  const filteredDevices = devices.filter((device) => {
+    const matchesStatus =
+      statusFilter === 'todos' ||
+      (statusFilter === 'nuevos' && device.nuevo) ||
+      (statusFilter === 'modificados' && device.modificado) ||
+      (statusFilter === 'conocidos' && device.conocido && !device.nuevo);
+
+    const matchesType = typeFilter === 'todos' || device.deviceType === typeFilter;
+
+    return matchesStatus && matchesType;
+  });
+
+  const selectedDevice =
+    filteredDevices.find((device) => (device.mac ?? device.ip) === selectedDeviceKey) ??
+    filteredDevices[0];
+
+  const summary = {
+    total: devices.length,
+    nuevos: devices.filter((device) => device.nuevo).length,
+    modificados: devices.filter((device) => device.modificado).length,
+    conocidos: devices.filter((device) => device.conocido && !device.nuevo).length
+  };
 
   async function handleScan(): Promise<void> {
     setIsLoading(true);
@@ -23,6 +51,7 @@ export function App() {
     try {
       const results = await window.homeSentinel.scanDevices();
       setDevices(results);
+      setSelectedDeviceKey(results[0] ? results[0].mac ?? results[0].ip : null);
     } catch (error) {
       const message =
         error instanceof Error
@@ -52,7 +81,15 @@ export function App() {
           </article>
           <article>
             <span>Resultados</span>
-            <strong>{devices.length}</strong>
+            <strong>{summary.total}</strong>
+          </article>
+          <article>
+            <span>Nuevos</span>
+            <strong>{summary.nuevos}</strong>
+          </article>
+          <article>
+            <span>Modificados</span>
+            <strong>{summary.modificados}</strong>
           </article>
         </div>
 
@@ -71,20 +108,47 @@ export function App() {
         <section className="results-section" aria-live="polite">
           <header className="results-header">
             <h2>Dispositivos detectados</h2>
-            <span>{devices.length === 0 ? 'Sin resultados aun' : `${devices.length} encontrados`}</span>
+            <span>{filteredDevices.length === 0 ? 'Sin resultados aun' : `${filteredDevices.length} visibles`}</span>
           </header>
 
-          {devices.length === 0 ? (
+          <div className="filter-bar">
+            <label className="filter-field">
+              <span>Estado</span>
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+                <option value="todos">Todos</option>
+                <option value="nuevos">Nuevos</option>
+                <option value="modificados">Modificados</option>
+                <option value="conocidos">Conocidos</option>
+              </select>
+            </label>
+
+            <label className="filter-field">
+              <span>Tipo</span>
+              <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                <option value="todos">Todos</option>
+                <option value="router">Router</option>
+                <option value="pc">PC</option>
+                <option value="celular">Celular</option>
+                <option value="impresora">Impresora</option>
+                <option value="iot">IoT</option>
+                <option value="desconocido">Desconocido</option>
+              </select>
+            </label>
+          </div>
+
+          {filteredDevices.length === 0 ? (
             <div className="empty-state">
               <p>No hay resultados todavia. Ejecuta el escaneo para ver dispositivos en la red.</p>
             </div>
           ) : (
-            <div className="device-list">
-              {devices.map((device) => (
-                <article
-                  key={device.mac ?? device.ip}
-                  className={`device-card ${device.nuevo ? 'is-new' : 'is-known'}`}
-                >
+            <div className="results-layout">
+              <div className="device-list">
+                {filteredDevices.map((device) => (
+                  <article
+                    key={device.mac ?? device.ip}
+                    className={`device-card ${device.nuevo ? 'is-new' : 'is-known'} ${(device.mac ?? device.ip) === (selectedDevice?.mac ?? selectedDevice?.ip) ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedDeviceKey(device.mac ?? device.ip)}
+                  >
                   <div className="device-main">
                     <div>
                       <span className="device-label">IP</span>
@@ -119,6 +183,7 @@ export function App() {
                     <span className={`badge ${device.nuevo ? 'badge-new' : 'badge-known'}`}>
                       {device.nuevo ? 'Nuevo' : 'Conocido'}
                     </span>
+                    {device.modificado ? <span className="badge badge-changed">Modificado</span> : null}
                     <span className="badge badge-type">
                       {device.deviceType ?? 'desconocido'}
                     </span>
@@ -140,12 +205,81 @@ export function App() {
                       </ul>
                     ) : null}
                   </div>
-                </article>
-              ))}
+                  </article>
+                ))}
+              </div>
+
+              {selectedDevice ? (
+                <aside className="detail-panel">
+                  <p className="eyebrow">Detalle</p>
+                  <h3>{selectedDevice.hostname ?? selectedDevice.ip}</h3>
+                  <p className="detail-copy">
+                    {selectedDevice.nuevo
+                      ? 'Este dispositivo apareció por primera vez en el escaneo actual.'
+                      : selectedDevice.modificado
+                        ? 'Este dispositivo cambió desde el último registro conocido.'
+                        : 'Este dispositivo coincide con el último estado conocido.'}
+                  </p>
+
+                  <div className="detail-grid">
+                    <div>
+                      <span className="device-label">Primera vez visto</span>
+                      <strong>{formatDate(selectedDevice.firstSeen)}</strong>
+                    </div>
+                    <div>
+                      <span className="device-label">Última vez visto</span>
+                      <strong>{formatDate(selectedDevice.previousLastSeen)}</strong>
+                    </div>
+                    <div>
+                      <span className="device-label">Puertos abiertos</span>
+                      <strong>
+                        {selectedDevice.openPorts && selectedDevice.openPorts.length > 0
+                          ? selectedDevice.openPorts.join(', ')
+                          : 'Sin puertos detectados'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="device-label">Confianza</span>
+                      <strong>
+                        {typeof selectedDevice.classificationConfidence === 'number'
+                          ? `${Math.round(selectedDevice.classificationConfidence * 100)}%`
+                          : 'No disponible'}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <span className="device-label">Cambios detectados</span>
+                    {selectedDevice.changeSummary.length > 0 ? (
+                      <ul className="reason-list">
+                        {selectedDevice.changeSummary.map((change) => (
+                          <li key={`${selectedDevice.mac ?? selectedDevice.ip}-${change}`}>{change}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="detail-copy">No se detectaron cambios respecto al registro anterior.</p>
+                    )}
+                  </div>
+                </aside>
+              ) : null}
             </div>
           )}
         </section>
       </section>
     </main>
   );
+}
+
+function formatDate(value?: string): string {
+  if (!value) {
+    return 'No disponible';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'No disponible';
+  }
+
+  return date.toLocaleString('es-GT');
 }

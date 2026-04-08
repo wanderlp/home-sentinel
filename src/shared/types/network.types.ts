@@ -21,6 +21,10 @@ export interface Device {
 export interface DetectedDevice extends Device {
   conocido: boolean;
   nuevo: boolean;
+  modificado: boolean;
+  changeSummary: string[];
+  firstSeen?: string;
+  previousLastSeen?: string;
 }
 
 export interface StoredDevice {
