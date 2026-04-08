@@ -10,14 +10,14 @@ export class DeviceService {
 
   async scanAndDetect(): Promise<DetectedDevice[]> {
     const scannedDevices = await this.scanner.scan();
-    const knownDevices = this.repository.getKnownDevices();
+    const knownDevices = await this.repository.getKnownDevices();
     const knownMacs = this.createKnownMacSet(knownDevices);
 
     const detectedDevices = scannedDevices.map((device) =>
       this.mapDetectedDevice(device, knownMacs)
     );
 
-    this.repository.saveDevices(scannedDevices);
+    await this.repository.saveDevices(scannedDevices);
 
     return detectedDevices;
   }

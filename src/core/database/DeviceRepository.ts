@@ -1,5 +1,5 @@
-import type Database from 'better-sqlite3';
-import { getDatabase } from './sqlite';
+import type sqlite3 from 'sqlite3';
+import { allRows, getDatabase, runStatement } from './sqlite';
 import type { Device, StoredDevice } from '../../shared/types';
 
 interface DeviceRow {
@@ -11,56 +11,64 @@ interface DeviceRow {
 }
 
 export class DeviceRepository {
-  private readonly database: Database.Database;
-  private readonly upsertStatement: Database.Statement<
-    [string, string, string, string]
-  >;
-  private readonly selectAllStatement: Database.Statement<[], DeviceRow>;
+  constructor(
+    private readonly databaseFactory: () => Promise<sqlite3.Database> = getDatabase
+  ) {}
 
-  constructor(database = getDatabase()) {
-    this.database = database;
-    this.upsertStatement = this.database.prepare(`
-      INSERT INTO devices (ip, mac, firstSeen, lastSeen)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(mac) DO UPDATE SET
-        ip = excluded.ip,
-        lastSeen = excluded.lastSeen
-    `);
-    this.selectAllStatement = this.database.prepare(`
-      SELECT id, ip, mac, firstSeen, lastSeen
-      FROM devices
-      ORDER BY lastSeen DESC
-    `);
-  }
-
-  saveDevices(devices: Device[]): void {
+  async saveDevices(devices: Device[]): Promise<void> {
     if (devices.length === 0) {
       return;
     }
 
-    const saveMany = this.database.transaction((pendingDevices: Device[]) => {
-      for (const device of pendingDevices) {
+    let database: sqlite3.Database | null = null;
+
+    try {
+      database = await this.databaseFactory();
+      await runStatement(database, 'BEGIN TRANSACTION');
+
+      for (const device of devices) {
         if (!device.mac) {
           continue;
         }
 
         const timestamp = new Date().toISOString();
-        this.upsertStatement.run(device.ip, device.mac, timestamp, timestamp);
+        await runStatement(
+          database,
+          `
+            INSERT INTO devices (ip, mac, firstSeen, lastSeen)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(mac) DO UPDATE SET
+              ip = excluded.ip,
+              lastSeen = excluded.lastSeen
+          `,
+          [device.ip, device.mac, timestamp, timestamp]
+        );
       }
-    });
 
-    try {
-      saveMany(devices);
+      await runStatement(database, 'COMMIT');
     } catch (error) {
+      if (database) {
+        await runStatement(database, 'ROLLBACK').catch(() => undefined);
+      }
+
       throw new Error(
         `No se pudieron guardar los dispositivos en SQLite: ${this.getErrorMessage(error)}`
       );
     }
   }
 
-  getKnownDevices(): StoredDevice[] {
+  async getKnownDevices(): Promise<StoredDevice[]> {
     try {
-      const rows = this.selectAllStatement.all();
+      const database = await this.databaseFactory();
+      const rows = await allRows<DeviceRow>(
+        database,
+        `
+          SELECT id, ip, mac, firstSeen, lastSeen
+          FROM devices
+          ORDER BY lastSeen DESC
+        `
+      );
+
       return rows.map((row) => this.mapRowToStoredDevice(row));
     } catch (error) {
       throw new Error(

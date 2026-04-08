@@ -1,36 +1,96 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Database from 'better-sqlite3';
+import sqlite3 from 'sqlite3';
 
 const DATABASE_DIRECTORY = path.resolve(process.cwd(), 'data');
 const DATABASE_PATH = path.join(DATABASE_DIRECTORY, 'home-sentinel.db');
 
-let databaseInstance: Database.Database | null = null;
+let databaseInstance: sqlite3.Database | null = null;
+let databasePromise: Promise<sqlite3.Database> | null = null;
 
-export function getDatabase(): Database.Database {
+export async function getDatabase(): Promise<sqlite3.Database> {
   if (databaseInstance) {
     return databaseInstance;
   }
 
+  if (databasePromise) {
+    return databasePromise;
+  }
+
   fs.mkdirSync(DATABASE_DIRECTORY, { recursive: true });
 
-  const database = new Database(DATABASE_PATH);
-  database.pragma('journal_mode = WAL');
+  databasePromise = openDatabase(DATABASE_PATH)
+    .then(async (database) => {
+      await runStatement(database, 'PRAGMA journal_mode = WAL');
+      await initializeSchema(database);
+      databaseInstance = database;
+      return database;
+    })
+    .finally(() => {
+      databasePromise = null;
+    });
 
-  initializeSchema(database);
-  databaseInstance = database;
-
-  return databaseInstance;
+  return databasePromise;
 }
 
-function initializeSchema(database: Database.Database): void {
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS devices (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ip TEXT NOT NULL,
-      mac TEXT UNIQUE,
-      firstSeen TEXT NOT NULL,
-      lastSeen TEXT NOT NULL
-    );
-  `);
+async function initializeSchema(database: sqlite3.Database): Promise<void> {
+  await runStatement(
+    database,
+    `
+      CREATE TABLE IF NOT EXISTS devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip TEXT NOT NULL,
+        mac TEXT UNIQUE,
+        firstSeen TEXT NOT NULL,
+        lastSeen TEXT NOT NULL
+      );
+    `
+  );
+}
+
+function openDatabase(databasePath: string): Promise<sqlite3.Database> {
+  return new Promise((resolve, reject) => {
+    const database = new sqlite3.Database(databasePath, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(database);
+    });
+  });
+}
+
+export function runStatement(
+  database: sqlite3.Database,
+  sql: string,
+  params: unknown[] = []
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    database.run(sql, params, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
+export function allRows<Row>(
+  database: sqlite3.Database,
+  sql: string,
+  params: unknown[] = []
+): Promise<Row[]> {
+  return new Promise((resolve, reject) => {
+    database.all(sql, params, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve((rows as Row[]) ?? []);
+    });
+  });
 }
