@@ -50,6 +50,19 @@ async function initializeSchema(database: sqlite3.Database): Promise<void> {
     `
   );
 
+  await runStatement(
+    database,
+    `
+      CREATE TABLE IF NOT EXISTS device_ports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        deviceMac TEXT NOT NULL,
+        port INTEGER NOT NULL,
+        lastSeen TEXT NOT NULL,
+        UNIQUE(deviceMac, port)
+      );
+    `
+  );
+
   await ensureColumnExists(database, 'devices', 'hostname', 'TEXT');
   await ensureColumnExists(database, 'devices', 'vendor', 'TEXT');
   await ensureColumnExists(database, 'devices', 'deviceType', 'TEXT');

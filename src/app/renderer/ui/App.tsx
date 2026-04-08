@@ -102,6 +102,14 @@ export function App() {
                       <span className="device-label">MAC</span>
                       <strong>{device.mac ?? 'No disponible'}</strong>
                     </div>
+                    <div>
+                      <span className="device-label">Puertos</span>
+                      <strong>
+                        {device.openPorts && device.openPorts.length > 0
+                          ? device.openPorts.join(', ')
+                          : 'Sin puertos detectados'}
+                      </strong>
+                    </div>
                   </div>
 
                   <div className="device-badges">

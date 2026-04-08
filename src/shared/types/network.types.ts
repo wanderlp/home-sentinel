@@ -13,6 +13,7 @@ export interface Device {
   hostname?: string;
   vendor?: string;
   deviceType?: DeviceType;
+  openPorts?: number[];
 }
 
 export interface DetectedDevice extends Device {
@@ -27,6 +28,7 @@ export interface StoredDevice {
   hostname?: string;
   vendor?: string;
   deviceType?: DeviceType;
+  openPorts?: number[];
   firstSeen: string;
   lastSeen: string;
 }

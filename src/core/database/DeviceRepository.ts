@@ -13,6 +13,11 @@ interface DeviceRow {
   lastSeen: string;
 }
 
+interface DevicePortRow {
+  deviceMac: string;
+  port: number;
+}
+
 export class DeviceRepository {
   constructor(
     private readonly databaseFactory: () => Promise<sqlite3.Database> = getDatabase
@@ -57,6 +62,26 @@ export class DeviceRepository {
             timestamp
           ]
         );
+
+        await runStatement(
+          database,
+          `
+            DELETE FROM device_ports
+            WHERE deviceMac = ?
+          `,
+          [device.mac]
+        );
+
+        for (const port of device.openPorts ?? []) {
+          await runStatement(
+            database,
+            `
+              INSERT INTO device_ports (deviceMac, port, lastSeen)
+              VALUES (?, ?, ?)
+            `,
+            [device.mac, port, timestamp]
+          );
+        }
       }
 
       await runStatement(database, 'COMMIT');
@@ -82,8 +107,16 @@ export class DeviceRepository {
           ORDER BY lastSeen DESC
         `
       );
+      const devicePorts = await allRows<DevicePortRow>(
+        database,
+        `
+          SELECT deviceMac, port
+          FROM device_ports
+        `
+      );
+      const portsByMac = this.groupPortsByMac(devicePorts);
 
-      return rows.map((row) => this.mapRowToStoredDevice(row));
+      return rows.map((row) => this.mapRowToStoredDevice(row, portsByMac));
     } catch (error) {
       throw new Error(
         `No se pudieron obtener los dispositivos guardados: ${this.getErrorMessage(error)}`
@@ -91,7 +124,10 @@ export class DeviceRepository {
     }
   }
 
-  private mapRowToStoredDevice(row: DeviceRow): StoredDevice {
+  private mapRowToStoredDevice(
+    row: DeviceRow,
+    portsByMac: Map<string, number[]>
+  ): StoredDevice {
     return {
       id: row.id,
       ip: row.ip,
@@ -99,9 +135,26 @@ export class DeviceRepository {
       hostname: row.hostname ?? undefined,
       vendor: row.vendor ?? undefined,
       deviceType: this.mapDeviceType(row.deviceType),
+      openPorts: portsByMac.get(row.mac) ?? [],
       firstSeen: row.firstSeen,
       lastSeen: row.lastSeen
     };
+  }
+
+  private groupPortsByMac(rows: DevicePortRow[]): Map<string, number[]> {
+    const portsByMac = new Map<string, number[]>();
+
+    for (const row of rows) {
+      const existingPorts = portsByMac.get(row.deviceMac) ?? [];
+      existingPorts.push(row.port);
+      portsByMac.set(row.deviceMac, existingPorts);
+    }
+
+    for (const [mac, ports] of portsByMac.entries()) {
+      portsByMac.set(mac, ports.sort((left, right) => left - right));
+    }
+
+    return portsByMac;
   }
 
   private mapDeviceType(deviceType?: string | null): DeviceType | undefined {
