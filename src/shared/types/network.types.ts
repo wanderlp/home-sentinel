@@ -4,6 +4,14 @@ export interface Device {
   mac?: string;
 }
 
+export interface StoredDevice {
+  id: number;
+  ip: string;
+  mac: string;
+  firstSeen: string;
+  lastSeen: string;
+}
+
 export interface NetworkDevice {
   id: string;
   ipAddress: string;
