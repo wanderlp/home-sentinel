@@ -14,6 +14,8 @@ export interface Device {
   vendor?: string;
   deviceType?: DeviceType;
   openPorts?: number[];
+  classificationConfidence?: number;
+  classificationReasons?: string[];
 }
 
 export interface DetectedDevice extends Device {

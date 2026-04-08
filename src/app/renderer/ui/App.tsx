@@ -123,6 +123,23 @@ export function App() {
                       {device.deviceType ?? 'desconocido'}
                     </span>
                   </div>
+
+                  <div className="device-inference">
+                    <span className="device-label">Confianza</span>
+                    <strong>
+                      {typeof device.classificationConfidence === 'number'
+                        ? `${Math.round(device.classificationConfidence * 100)}%`
+                        : 'No disponible'}
+                    </strong>
+
+                    {device.classificationReasons && device.classificationReasons.length > 0 ? (
+                      <ul className="reason-list">
+                        {device.classificationReasons.map((reason) => (
+                          <li key={`${device.mac ?? device.ip}-${reason}`}>{reason}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
                 </article>
               ))}
             </div>
