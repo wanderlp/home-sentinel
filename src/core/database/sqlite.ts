@@ -42,6 +42,8 @@ async function initializeSchema(database: sqlite3.Database): Promise<void> {
         ip TEXT NOT NULL,
         mac TEXT UNIQUE,
         hostname TEXT,
+        vendor TEXT,
+        deviceType TEXT,
         firstSeen TEXT NOT NULL,
         lastSeen TEXT NOT NULL
       );
@@ -49,6 +51,8 @@ async function initializeSchema(database: sqlite3.Database): Promise<void> {
   );
 
   await ensureColumnExists(database, 'devices', 'hostname', 'TEXT');
+  await ensureColumnExists(database, 'devices', 'vendor', 'TEXT');
+  await ensureColumnExists(database, 'devices', 'deviceType', 'TEXT');
 }
 
 function openDatabase(databasePath: string): Promise<sqlite3.Database> {

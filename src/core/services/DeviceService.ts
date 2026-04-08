@@ -1,15 +1,19 @@
 import { DeviceRepository } from '../database/DeviceRepository';
 import { HomeSentinelScanner } from '../scanner/HomeSentinelScanner';
+import { DeviceClassifier } from '../classification/DeviceClassifier';
 import type { DetectedDevice, Device, StoredDevice } from '../../shared/types';
 
 export class DeviceService {
   constructor(
     private readonly scanner = new HomeSentinelScanner(),
-    private readonly repository = new DeviceRepository()
+    private readonly repository = new DeviceRepository(),
+    private readonly classifier = new DeviceClassifier()
   ) {}
 
   async scanAndDetect(): Promise<DetectedDevice[]> {
-    const scannedDevices = await this.scanner.scan();
+    const scannedDevices = (await this.scanner.scan()).map((device) =>
+      this.classifier.classify(device)
+    );
     const knownDevices = await this.repository.getKnownDevices();
     const knownMacs = this.createKnownMacSet(knownDevices);
 

@@ -95,6 +95,10 @@ export function App() {
                       <strong>{device.hostname ?? 'No disponible'}</strong>
                     </div>
                     <div>
+                      <span className="device-label">Fabricante</span>
+                      <strong>{device.vendor ?? 'No identificado'}</strong>
+                    </div>
+                    <div>
                       <span className="device-label">MAC</span>
                       <strong>{device.mac ?? 'No disponible'}</strong>
                     </div>
@@ -106,6 +110,9 @@ export function App() {
                     </span>
                     <span className={`badge ${device.nuevo ? 'badge-new' : 'badge-known'}`}>
                       {device.nuevo ? 'Nuevo' : 'Conocido'}
+                    </span>
+                    <span className="badge badge-type">
+                      {device.deviceType ?? 'desconocido'}
                     </span>
                   </div>
                 </article>

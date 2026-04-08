@@ -1,12 +1,14 @@
 import type sqlite3 from 'sqlite3';
 import { allRows, getDatabase, runStatement } from './sqlite';
-import type { Device, StoredDevice } from '../../shared/types';
+import type { Device, DeviceType, StoredDevice } from '../../shared/types';
 
 interface DeviceRow {
   id: number;
   ip: string;
   mac: string;
   hostname?: string | null;
+  vendor?: string | null;
+  deviceType?: string | null;
   firstSeen: string;
   lastSeen: string;
 }
@@ -36,14 +38,24 @@ export class DeviceRepository {
         await runStatement(
           database,
           `
-            INSERT INTO devices (ip, mac, hostname, firstSeen, lastSeen)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO devices (ip, mac, hostname, vendor, deviceType, firstSeen, lastSeen)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(mac) DO UPDATE SET
               ip = excluded.ip,
               hostname = excluded.hostname,
+              vendor = excluded.vendor,
+              deviceType = excluded.deviceType,
               lastSeen = excluded.lastSeen
           `,
-          [device.ip, device.mac, device.hostname ?? null, timestamp, timestamp]
+          [
+            device.ip,
+            device.mac,
+            device.hostname ?? null,
+            device.vendor ?? null,
+            device.deviceType ?? null,
+            timestamp,
+            timestamp
+          ]
         );
       }
 
@@ -65,7 +77,7 @@ export class DeviceRepository {
       const rows = await allRows<DeviceRow>(
         database,
         `
-          SELECT id, ip, mac, hostname, firstSeen, lastSeen
+          SELECT id, ip, mac, hostname, vendor, deviceType, firstSeen, lastSeen
           FROM devices
           ORDER BY lastSeen DESC
         `
@@ -85,9 +97,19 @@ export class DeviceRepository {
       ip: row.ip,
       mac: row.mac,
       hostname: row.hostname ?? undefined,
+      vendor: row.vendor ?? undefined,
+      deviceType: this.mapDeviceType(row.deviceType),
       firstSeen: row.firstSeen,
       lastSeen: row.lastSeen
     };
+  }
+
+  private mapDeviceType(deviceType?: string | null): DeviceType | undefined {
+    if (!deviceType) {
+      return undefined;
+    }
+
+    return deviceType as DeviceType;
   }
 
   private getErrorMessage(error: unknown): string {

@@ -220,6 +220,12 @@ body {
   color: #9ecbff;
 }
 
+.badge-type {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8f1ff;
+  text-transform: capitalize;
+}
+
 @media (max-width: 640px) {
   .app-shell {
     padding: 20px;
