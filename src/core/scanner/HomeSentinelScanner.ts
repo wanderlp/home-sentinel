@@ -76,7 +76,7 @@ export class HomeSentinelScanner {
     const octets = ipAddress.split('.').map((segment) => Number.parseInt(segment, 10));
 
     if (octets.length !== 4 || octets.some((octet) => Number.isNaN(octet) || octet < 0 || octet > 255)) {
-      throw new Error(`Direccion IPv4 invalida: ${ipAddress}`);
+      throw new Error(`Dirección IPv4 inválida: ${ipAddress}`);
     }
 
     return (
