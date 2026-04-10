@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Iniciar renderer (Vite)",
+      "type": "shell",
+      "command": "npm run dev:renderer",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": ".",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern": "Local:.*5173"
+        }
+      }
+    },
+    {
+      "label": "Compilar main y preload",
+      "type": "shell",
+      "command": "npm run build:main",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Preparar entorno dev",
+      "dependsOn": ["Iniciar renderer (Vite)", "Compilar main y preload"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Verificar tipos",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}
