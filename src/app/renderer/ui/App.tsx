@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import type { CSSProperties, SVGProps } from 'react';
 import type { AppBootstrapState, DetectedDevice, WindowState } from '../../../shared/types';
 
 type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
@@ -18,6 +19,14 @@ declare global {
     };
   }
 }
+
+const dragRegionStyle = {
+  WebkitAppRegion: 'drag'
+} as CSSProperties;
+
+const noDragRegionStyle = {
+  WebkitAppRegion: 'no-drag'
+} as CSSProperties;
 
 export function App() {
   const bootstrapState = window.homeSentinel?.getBootstrapState();
@@ -87,9 +96,7 @@ export function App() {
       setSelectedDeviceKey(results[0] ? results[0].mac ?? results[0].ip : null);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo ejecutar el escaneo de red.';
+        error instanceof Error ? error.message : 'No se pudo ejecutar el escaneo de red.';
 
       setErrorMessage(message);
     } finally {
@@ -98,104 +105,102 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
-      <section className={`window-frame ${isMaximized ? 'is-maximized' : ''}`}>
-        <header className="window-titlebar">
-          <div className="window-title">
-            <span className="window-title-dot" />
-            <div>
-              <strong>Home Sentinel</strong>
-              <span>Monitor de red local</span>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.10),transparent_20%),linear-gradient(180deg,#04070d_0%,#0a1220_100%)] text-slate-100">
+      <section className="grid min-h-screen grid-rows-[auto_1fr] overflow-hidden bg-[linear-gradient(180deg,rgba(9,17,29,0.96)_0%,rgba(8,15,27,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <header
+          className="flex h-14 items-center justify-between gap-4 border-b border-sky-200/10 bg-[linear-gradient(180deg,rgba(13,24,40,0.98)_0%,rgba(10,20,34,0.98)_100%)] px-5 pr-3 max-[860px]:h-auto max-[860px]:flex-col max-[860px]:items-stretch max-[860px]:p-3"
+          style={dragRegionStyle}
+        >
+          <div className="flex min-w-0 items-center gap-3.5 max-[860px]:[WebkitAppRegion:drag]">
+            <span className="h-3 w-3 rounded-full bg-[linear-gradient(135deg,#79b8ff_0%,#42d3c8_100%)] shadow-[0_0_18px_rgba(121,184,255,0.45)]" />
+            <div className="flex min-w-0 items-center gap-2 text-sm">
+              <strong className="truncate font-semibold text-slate-50">Home Sentinel</strong>
+              <span className="shrink-0 text-slate-600">·</span>
+              <span className="truncate text-[0.82rem] text-slate-400">Monitorea tu red local</span>
             </div>
           </div>
 
-          <div className="window-controls">
-            <button
-              type="button"
-              className="window-control-button"
-              aria-label="Minimizar ventana"
+          <div className="flex items-center gap-2 max-[860px]:justify-end" style={noDragRegionStyle}>
+            <WindowControlButton
+              label="Minimizar ventana"
               onClick={() => void window.homeSentinel.windowControls.minimize()}
             >
-              <span className="window-control-minimize" />
-            </button>
-            <button
-              type="button"
-              className="window-control-button"
-              aria-label={isMaximized ? 'Restaurar ventana' : 'Maximizar ventana'}
+              <MinimizeIcon />
+            </WindowControlButton>
+            <WindowControlButton
+              label={isMaximized ? 'Restaurar ventana' : 'Maximizar ventana'}
               onClick={() => void window.homeSentinel.windowControls.toggleMaximize()}
             >
-              <span className={isMaximized ? 'window-control-restore' : 'window-control-maximize'} />
-            </button>
-            <button
-              type="button"
-              className="window-control-button is-close"
-              aria-label="Cerrar ventana"
+              {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
+            </WindowControlButton>
+            <WindowControlButton
+              label="Cerrar ventana"
               onClick={() => void window.homeSentinel.windowControls.close()}
+              isClose
             >
-              <span className="window-control-close" />
-            </button>
+              <CloseIcon />
+            </WindowControlButton>
           </div>
         </header>
 
-        <section className="dashboard-card">
-          <p className="eyebrow">Home Sentinel</p>
-          <h1>Monitor de red local</h1>
-          <p className="description">
+        <section className="overflow-auto bg-[radial-gradient(circle_at_top_left,rgba(41,95,158,0.18),transparent_24%),linear-gradient(180deg,rgba(8,16,28,0.98)_0%,rgba(7,14,24,0.98)_100%)] px-8 py-8 max-[860px]:px-5 max-[860px]:py-6">
+          <p className="mb-3 text-[0.8rem] uppercase tracking-[0.2em] text-sky-300">Home Sentinel</p>
+          <h1 className="text-[clamp(2.1rem,4vw,3.2rem)] font-semibold text-slate-50">Monitor de red local</h1>
+          <p className="mt-4 max-w-[60ch] text-[1rem] leading-7 text-slate-300">
             Ejecuta un escaneo de la red local para identificar dispositivos activos
             y marcar si ya eran conocidos o si aparecieron por primera vez.
           </p>
 
-          <div className="status-grid">
-            <article>
-              <span>Estado</span>
-              <strong>{isLoading ? 'Escaneando...' : bootstrapState?.status ?? 'idle'}</strong>
-            </article>
-            <article>
-              <span>Resultados</span>
-              <strong>{summary.total}</strong>
-            </article>
-            <article>
-              <span>Nuevos</span>
-              <strong>{summary.nuevos}</strong>
-            </article>
-            <article>
-              <span>Modificados</span>
-              <strong>{summary.modificados}</strong>
-            </article>
+          <div className="mt-7 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
+            <StatusCard label="Estado" value={isLoading ? 'Escaneando...' : bootstrapState?.status ?? 'idle'} />
+            <StatusCard label="Resultados" value={String(summary.total)} />
+            <StatusCard label="Nuevos" value={String(summary.nuevos)} />
+            <StatusCard label="Modificados" value={String(summary.modificados)} />
           </div>
 
-          <div className="actions">
+          <div className="mt-7 grid gap-3">
             <button
-              className="scan-button"
+              className="min-w-[190px] rounded-full bg-[linear-gradient(135deg,#7dbdff_0%,#4ed6c2_100%)] px-5 py-3.5 text-[0.98rem] font-extrabold text-slate-950 shadow-[0_12px_30px_rgba(78,214,194,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(78,214,194,0.26)] disabled:cursor-wait disabled:opacity-65 disabled:shadow-none max-[640px]:w-full"
               type="button"
               onClick={() => void handleScan()}
               disabled={isLoading}
+              style={noDragRegionStyle}
             >
               {isLoading ? 'Escaneando...' : 'Escanear red'}
             </button>
-            {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
+            {errorMessage ? <p className="m-0 text-rose-300">{errorMessage}</p> : null}
           </div>
 
-          <section className="results-section" aria-live="polite">
-            <header className="results-header">
-              <h2>Dispositivos detectados</h2>
-              <span>{filteredDevices.length === 0 ? 'Sin resultados aún' : `${filteredDevices.length} visibles`}</span>
+          <section className="mt-8" aria-live="polite">
+            <header className="mb-4 flex items-center justify-between gap-4 max-[640px]:flex-col max-[640px]:items-start">
+              <h2 className="m-0 text-xl font-semibold text-slate-100">Dispositivos detectados</h2>
+              <span className="text-sm text-slate-400">
+                {filteredDevices.length === 0 ? 'Sin resultados aún' : `${filteredDevices.length} visibles`}
+              </span>
             </header>
 
-            <div className="filter-bar">
-              <label className="filter-field">
-                <span>Estado</span>
-                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+            <div className="mb-[18px] flex flex-wrap gap-3">
+              <FilterField label="Estado">
+                <select
+                  className="rounded-xl border border-sky-200/15 bg-slate-950/75 px-3 py-2.5 text-slate-100 outline-none"
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                  style={noDragRegionStyle}
+                >
                   <option value="todos">Todos</option>
                   <option value="nuevos">Nuevos</option>
                   <option value="modificados">Modificados</option>
                   <option value="conocidos">Conocidos</option>
                 </select>
-              </label>
+              </FilterField>
 
-              <label className="filter-field">
-                <span>Tipo</span>
-                <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+              <FilterField label="Tipo">
+                <select
+                  className="rounded-xl border border-sky-200/15 bg-slate-950/75 px-3 py-2.5 text-slate-100 outline-none"
+                  value={typeFilter}
+                  onChange={(event) => setTypeFilter(event.target.value)}
+                  style={noDragRegionStyle}
+                >
                   <option value="todos">Todos</option>
                   <option value="router">Router</option>
                   <option value="pc">PC</option>
@@ -204,87 +209,83 @@ export function App() {
                   <option value="iot">IoT</option>
                   <option value="desconocido">Desconocido</option>
                 </select>
-              </label>
+              </FilterField>
             </div>
 
             {filteredDevices.length === 0 ? (
-              <div className="empty-state">
-                <p>No hay resultados todavía. Ejecuta el escaneo para ver dispositivos en la red.</p>
+              <div className="rounded-[20px] border border-dashed border-sky-200/20 bg-sky-300/[0.04] p-6 text-slate-300">
+                <p className="m-0">No hay resultados todavía. Ejecuta el escaneo para ver dispositivos en la red.</p>
               </div>
             ) : (
-              <div className="results-layout">
-                <div className="device-list">
-                  {filteredDevices.map((device) => (
-                    <article
-                      key={device.mac ?? device.ip}
-                      className={`device-card ${device.nuevo ? 'is-new' : 'is-known'} ${(device.mac ?? device.ip) === (selectedDevice?.mac ?? selectedDevice?.ip) ? 'is-selected' : ''}`}
-                      onClick={() => setSelectedDeviceKey(device.mac ?? device.ip)}
-                    >
-                      <div className="device-main">
-                        <div>
-                          <span className="device-label">IP</span>
-                          <strong>{device.ip}</strong>
+              <div className="grid gap-[18px] lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.95fr)]">
+                <div className="grid gap-3.5">
+                  {filteredDevices.map((device) => {
+                    const isSelected =
+                      (device.mac ?? device.ip) === (selectedDevice?.mac ?? selectedDevice?.ip);
+
+                    return (
+                      <article
+                        key={device.mac ?? device.ip}
+                        className={[
+                          'grid cursor-pointer gap-4 rounded-[20px] border bg-[linear-gradient(180deg,rgba(10,20,36,0.9)_0%,rgba(8,17,31,0.9)_100%)] p-5 transition hover:-translate-y-0.5',
+                          device.nuevo ? 'border-emerald-300/30' : 'border-sky-200/15',
+                          isSelected ? 'shadow-[0_0_0_1px_rgba(139,180,255,0.12)] border-sky-300/45' : ''
+                        ].join(' ')}
+                        onClick={() => setSelectedDeviceKey(device.mac ?? device.ip)}
+                        style={noDragRegionStyle}
+                      >
+                        <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+                          <DeviceField label="IP" value={device.ip} />
+                          <DeviceField label="Nombre" value={device.hostname ?? 'No disponible'} />
+                          <DeviceField label="Fabricante" value={device.vendor ?? 'No identificado'} />
+                          <DeviceField label="MAC" value={device.mac ?? 'No disponible'} />
+                          <DeviceField
+                            label="Puertos"
+                            value={
+                              device.openPorts && device.openPorts.length > 0
+                                ? device.openPorts.join(', ')
+                                : 'Sin puertos detectados'
+                            }
+                          />
                         </div>
-                        <div>
-                          <span className="device-label">Nombre</span>
-                          <strong>{device.hostname ?? 'No disponible'}</strong>
+
+                        <div className="flex flex-wrap gap-2.5">
+                          <Badge tone={device.activo ? 'online' : 'offline'}>
+                            {device.activo ? 'Activo' : 'Inactivo'}
+                          </Badge>
+                          <Badge tone={device.nuevo ? 'new' : 'known'}>
+                            {device.nuevo ? 'Nuevo' : 'Conocido'}
+                          </Badge>
+                          {device.modificado ? <Badge tone="changed">Modificado</Badge> : null}
+                          <Badge tone="type">{device.deviceType ?? 'desconocido'}</Badge>
                         </div>
-                        <div>
-                          <span className="device-label">Fabricante</span>
-                          <strong>{device.vendor ?? 'No identificado'}</strong>
-                        </div>
-                        <div>
-                          <span className="device-label">MAC</span>
-                          <strong>{device.mac ?? 'No disponible'}</strong>
-                        </div>
-                        <div>
-                          <span className="device-label">Puertos</span>
-                          <strong>
-                            {device.openPorts && device.openPorts.length > 0
-                              ? device.openPorts.join(', ')
-                              : 'Sin puertos detectados'}
+
+                        <div className="grid gap-2 pt-1">
+                          <span className="text-[0.82rem] uppercase tracking-[0.08em] text-slate-400">Confianza</span>
+                          <strong className="text-base font-semibold text-slate-100">
+                            {typeof device.classificationConfidence === 'number'
+                              ? `${Math.round(device.classificationConfidence * 100)}%`
+                              : 'No disponible'}
                           </strong>
+
+                          {device.classificationReasons && device.classificationReasons.length > 0 ? (
+                            <ul className="m-0 list-disc pl-[18px] text-[0.97rem] leading-6 text-slate-300">
+                              {device.classificationReasons.map((reason) => (
+                                <li key={`${device.mac ?? device.ip}-${reason}`}>{reason}</li>
+                              ))}
+                            </ul>
+                          ) : null}
                         </div>
-                      </div>
-
-                      <div className="device-badges">
-                        <span className={`badge ${device.activo ? 'badge-online' : 'badge-offline'}`}>
-                          {device.activo ? 'Activo' : 'Inactivo'}
-                        </span>
-                        <span className={`badge ${device.nuevo ? 'badge-new' : 'badge-known'}`}>
-                          {device.nuevo ? 'Nuevo' : 'Conocido'}
-                        </span>
-                        {device.modificado ? <span className="badge badge-changed">Modificado</span> : null}
-                        <span className="badge badge-type">
-                          {device.deviceType ?? 'desconocido'}
-                        </span>
-                      </div>
-
-                      <div className="device-inference">
-                        <span className="device-label">Confianza</span>
-                        <strong>
-                          {typeof device.classificationConfidence === 'number'
-                            ? `${Math.round(device.classificationConfidence * 100)}%`
-                            : 'No disponible'}
-                        </strong>
-
-                        {device.classificationReasons && device.classificationReasons.length > 0 ? (
-                          <ul className="reason-list">
-                            {device.classificationReasons.map((reason) => (
-                              <li key={`${device.mac ?? device.ip}-${reason}`}>{reason}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
 
                 {selectedDevice ? (
-                  <aside className="detail-panel">
-                    <p className="eyebrow">Detalle</p>
-                    <h3>{selectedDevice.hostname ?? selectedDevice.ip}</h3>
-                    <p className="detail-copy">
+                  <aside className="grid content-start gap-4 rounded-[20px] border border-sky-200/15 bg-[linear-gradient(180deg,rgba(10,20,36,0.92)_0%,rgba(8,17,31,0.92)_100%)] p-[22px]">
+                    <p className="m-0 text-[0.8rem] uppercase tracking-[0.2em] text-sky-300">Detalle</p>
+                    <h3 className="m-0 text-[1.35rem] font-semibold text-slate-50">{selectedDevice.hostname ?? selectedDevice.ip}</h3>
+                    <p className="m-0 leading-7 text-slate-300">
                       {selectedDevice.nuevo
                         ? 'Este dispositivo apareció por primera vez en el escaneo actual.'
                         : selectedDevice.modificado
@@ -292,43 +293,37 @@ export function App() {
                           : 'Este dispositivo coincide con el último estado conocido.'}
                     </p>
 
-                    <div className="detail-grid">
-                      <div>
-                        <span className="device-label">Primera vez visto</span>
-                        <strong>{formatDate(selectedDevice.firstSeen)}</strong>
-                      </div>
-                      <div>
-                        <span className="device-label">Última vez visto</span>
-                        <strong>{formatDate(selectedDevice.previousLastSeen)}</strong>
-                      </div>
-                      <div>
-                        <span className="device-label">Puertos abiertos</span>
-                        <strong>
-                          {selectedDevice.openPorts && selectedDevice.openPorts.length > 0
+                    <div className="grid gap-3.5">
+                      <DeviceField label="Primera vez visto" value={formatDate(selectedDevice.firstSeen)} />
+                      <DeviceField label="Última vez visto" value={formatDate(selectedDevice.previousLastSeen)} />
+                      <DeviceField
+                        label="Puertos abiertos"
+                        value={
+                          selectedDevice.openPorts && selectedDevice.openPorts.length > 0
                             ? selectedDevice.openPorts.join(', ')
-                            : 'Sin puertos detectados'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="device-label">Confianza</span>
-                        <strong>
-                          {typeof selectedDevice.classificationConfidence === 'number'
+                            : 'Sin puertos detectados'
+                        }
+                      />
+                      <DeviceField
+                        label="Confianza"
+                        value={
+                          typeof selectedDevice.classificationConfidence === 'number'
                             ? `${Math.round(selectedDevice.classificationConfidence * 100)}%`
-                            : 'No disponible'}
-                        </strong>
-                      </div>
+                            : 'No disponible'
+                        }
+                      />
                     </div>
 
-                    <div className="detail-section">
-                      <span className="device-label">Cambios detectados</span>
+                    <div className="grid gap-2">
+                      <span className="text-[0.82rem] uppercase tracking-[0.08em] text-slate-400">Cambios detectados</span>
                       {selectedDevice.changeSummary.length > 0 ? (
-                        <ul className="reason-list">
+                        <ul className="m-0 list-disc pl-[18px] text-[0.97rem] leading-6 text-slate-300">
                           {selectedDevice.changeSummary.map((change) => (
                             <li key={`${selectedDevice.mac ?? selectedDevice.ip}-${change}`}>{change}</li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="detail-copy">No se detectaron cambios respecto al registro anterior.</p>
+                        <p className="m-0 leading-7 text-slate-300">No se detectaron cambios respecto al registro anterior.</p>
                       )}
                     </div>
                   </aside>
@@ -339,6 +334,121 @@ export function App() {
         </section>
       </section>
     </main>
+  );
+}
+
+function StatusCard({ label, value }: { label: string; value: string }) {
+  return (
+    <article className="rounded-[18px] border border-sky-200/10 bg-[linear-gradient(180deg,rgba(23,38,60,0.72)_0%,rgba(13,24,40,0.72)_100%)] p-[18px]">
+      <span className="mb-1.5 block text-[0.9rem] text-slate-400">{label}</span>
+      <strong className="text-2xl font-semibold text-slate-50">{value}</strong>
+    </article>
+  );
+}
+
+function FilterField({
+  label,
+  children
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="grid min-w-[180px] gap-1.5">
+      <span className="text-[0.85rem] text-slate-400">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function DeviceField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="text-[0.82rem] uppercase tracking-[0.08em] text-slate-400">{label}</span>
+      <strong className="mt-1 block break-words text-base font-semibold text-slate-100">{value}</strong>
+    </div>
+  );
+}
+
+function Badge({
+  children,
+  tone
+}: {
+  children: React.ReactNode;
+  tone: 'online' | 'offline' | 'new' | 'known' | 'changed' | 'type';
+}) {
+  const toneClasses: Record<typeof tone, string> = {
+    online: 'bg-emerald-300/16 text-emerald-200',
+    offline: 'bg-rose-300/12 text-rose-200',
+    new: 'bg-amber-300/14 text-amber-200',
+    known: 'bg-sky-300/14 text-sky-200',
+    changed: 'bg-orange-300/14 text-orange-200',
+    type: 'bg-white/8 text-slate-100 capitalize'
+  };
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-3 py-2 text-[0.86rem] font-bold ${toneClasses[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function WindowControlButton({
+  children,
+  isClose = false,
+  label,
+  onClick
+}: {
+  children: React.ReactNode;
+  isClose?: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={[
+        'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-slate-300 transition hover:border-sky-200/18 hover:bg-white/[0.07] hover:text-slate-50',
+        isClose ? 'hover:border-rose-400/28 hover:bg-rose-400/16 hover:text-rose-50' : ''
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  );
+}
+
+function MinimizeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+      <path d="M2 8h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MaximizeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+      <rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+function RestoreIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+      <path d="M4 2.5h4.5V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 4h4.5v4.5H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CloseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+      <path d="M3 3l6 6M9 3 3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
   );
 }
 
