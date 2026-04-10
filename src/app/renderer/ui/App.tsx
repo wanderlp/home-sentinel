@@ -108,19 +108,19 @@ export function App() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.10),transparent_20%),linear-gradient(180deg,#04070d_0%,#0a1220_100%)] text-slate-100">
       <section className="grid min-h-screen grid-rows-[auto_1fr] overflow-hidden bg-[linear-gradient(180deg,rgba(9,17,29,0.96)_0%,rgba(8,15,27,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <header
-          className="flex h-11 items-center justify-between gap-3 border-b border-sky-200/10 bg-[linear-gradient(180deg,rgba(13,24,40,0.98)_0%,rgba(10,20,34,0.98)_100%)] px-4 pr-3 max-[860px]:h-auto max-[860px]:flex-col max-[860px]:items-stretch max-[860px]:p-3"
+          className="flex h-11 flex-nowrap items-center justify-between gap-3 overflow-hidden border-b border-sky-200/10 bg-[linear-gradient(180deg,rgba(13,24,40,0.98)_0%,rgba(10,20,34,0.98)_100%)] px-4 pr-3"
           style={dragRegionStyle}
         >
-          <div className="flex min-w-0 items-center gap-3 max-[860px]:[WebkitAppRegion:drag]">
+          <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[linear-gradient(135deg,#79b8ff_0%,#42d3c8_100%)] shadow-[0_0_14px_rgba(121,184,255,0.42)]" />
-            <div className="flex min-w-0 items-center gap-2 leading-none">
-              <strong className="truncate text-[0.94rem] font-semibold text-slate-50">Home Sentinel</strong>
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap leading-none">
+              <strong className="shrink-0 text-[0.94rem] font-semibold text-slate-50">Home Sentinel</strong>
               <span className="shrink-0 text-[0.72rem] text-slate-600">-</span>
-              <span className="truncate text-[0.79rem] text-slate-400">Monitorea tu red local</span>
+              <span className="min-w-0 truncate text-[0.79rem] text-slate-400">Monitorea tu red local</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 max-[860px]:justify-end" style={noDragRegionStyle}>
+          <div className="flex shrink-0 items-center gap-1.5" style={noDragRegionStyle}>
             <WindowControlButton
               label="Minimizar ventana"
               onClick={() => void window.homeSentinel.windowControls.minimize()}
