@@ -108,19 +108,19 @@ export function App() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.10),transparent_20%),linear-gradient(180deg,#04070d_0%,#0a1220_100%)] text-slate-100">
       <section className="grid min-h-screen grid-rows-[auto_1fr] overflow-hidden bg-[linear-gradient(180deg,rgba(9,17,29,0.96)_0%,rgba(8,15,27,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <header
-          className="flex h-14 items-center justify-between gap-4 border-b border-sky-200/10 bg-[linear-gradient(180deg,rgba(13,24,40,0.98)_0%,rgba(10,20,34,0.98)_100%)] px-5 pr-3 max-[860px]:h-auto max-[860px]:flex-col max-[860px]:items-stretch max-[860px]:p-3"
+          className="flex h-11 items-center justify-between gap-3 border-b border-sky-200/10 bg-[linear-gradient(180deg,rgba(13,24,40,0.98)_0%,rgba(10,20,34,0.98)_100%)] px-4 pr-3 max-[860px]:h-auto max-[860px]:flex-col max-[860px]:items-stretch max-[860px]:p-3"
           style={dragRegionStyle}
         >
-          <div className="flex min-w-0 items-center gap-3.5 max-[860px]:[WebkitAppRegion:drag]">
-            <span className="h-3 w-3 rounded-full bg-[linear-gradient(135deg,#79b8ff_0%,#42d3c8_100%)] shadow-[0_0_18px_rgba(121,184,255,0.45)]" />
-            <div className="flex min-w-0 items-center gap-2 text-sm">
-              <strong className="truncate font-semibold text-slate-50">Home Sentinel</strong>
-              <span className="shrink-0 text-slate-600">·</span>
-              <span className="truncate text-[0.82rem] text-slate-400">Monitorea tu red local</span>
+          <div className="flex min-w-0 items-center gap-3 max-[860px]:[WebkitAppRegion:drag]">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[linear-gradient(135deg,#79b8ff_0%,#42d3c8_100%)] shadow-[0_0_14px_rgba(121,184,255,0.42)]" />
+            <div className="flex min-w-0 items-center gap-2 leading-none">
+              <strong className="truncate text-[0.94rem] font-semibold text-slate-50">Home Sentinel</strong>
+              <span className="shrink-0 text-[0.72rem] text-slate-600">-</span>
+              <span className="truncate text-[0.79rem] text-slate-400">Monitorea tu red local</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 max-[860px]:justify-end" style={noDragRegionStyle}>
+          <div className="flex items-center gap-1.5 max-[860px]:justify-end" style={noDragRegionStyle}>
             <WindowControlButton
               label="Minimizar ventana"
               onClick={() => void window.homeSentinel.windowControls.minimize()}
@@ -229,7 +229,7 @@ export function App() {
                         className={[
                           'grid cursor-pointer gap-4 rounded-[20px] border bg-[linear-gradient(180deg,rgba(10,20,36,0.9)_0%,rgba(8,17,31,0.9)_100%)] p-5 transition hover:-translate-y-0.5',
                           device.nuevo ? 'border-emerald-300/30' : 'border-sky-200/15',
-                          isSelected ? 'shadow-[0_0_0_1px_rgba(139,180,255,0.12)] border-sky-300/45' : ''
+                          isSelected ? 'border-sky-300/45 shadow-[0_0_0_1px_rgba(139,180,255,0.12)]' : ''
                         ].join(' ')}
                         onClick={() => setSelectedDeviceKey(device.mac ?? device.ip)}
                         style={noDragRegionStyle}
@@ -410,7 +410,7 @@ function WindowControlButton({
       aria-label={label}
       onClick={onClick}
       className={[
-        'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-slate-300 transition hover:border-sky-200/18 hover:bg-white/[0.07] hover:text-slate-50',
+        'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/8 bg-white/[0.03] p-0 leading-none text-slate-300 transition hover:border-sky-200/18 hover:bg-white/[0.07] hover:text-slate-50',
         isClose ? 'hover:border-rose-400/28 hover:bg-rose-400/16 hover:text-rose-50' : ''
       ].join(' ')}
     >
@@ -421,7 +421,7 @@ function WindowControlButton({
 
 function MinimizeIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
       <path d="M2 8h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
@@ -429,7 +429,7 @@ function MinimizeIcon(props: SVGProps<SVGSVGElement>) {
 
 function MaximizeIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
       <rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1.4" />
     </svg>
   );
@@ -437,7 +437,7 @@ function MaximizeIcon(props: SVGProps<SVGSVGElement>) {
 
 function RestoreIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
       <path d="M4 2.5h4.5V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M3 4h4.5v4.5H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
     </svg>
@@ -446,7 +446,7 @@ function RestoreIcon(props: SVGProps<SVGSVGElement>) {
 
 function CloseIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
       <path d="M3 3l6 6M9 3 3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );

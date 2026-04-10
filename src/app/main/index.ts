@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { NetworkMonitorService } from '../../core/network/services/network-monitor.service';
 import { DeviceService } from '../../core/services/DeviceService';
@@ -8,6 +9,96 @@ let mainWindow: BrowserWindow | null = null;
 
 const isDevelopment = !app.isPackaged;
 const deviceService = new DeviceService();
+const windowStateVersion = 3;
+const defaultWindowBounds = {
+  width: 860,
+  height: 600
+};
+const windowStateFilePath = path.join(app.getPath('userData'), 'window-state.json');
+
+interface PersistedWindowState {
+  version: number;
+  x?: number;
+  y?: number;
+  width: number;
+  height: number;
+  isMaximized: boolean;
+}
+
+function readWindowState(): PersistedWindowState {
+  try {
+    if (!fs.existsSync(windowStateFilePath)) {
+      return {
+        version: windowStateVersion,
+        ...defaultWindowBounds,
+        isMaximized: false
+      };
+    }
+
+    const content = fs.readFileSync(windowStateFilePath, 'utf-8');
+    const parsed = JSON.parse(content) as Partial<PersistedWindowState>;
+
+    if (parsed.version !== windowStateVersion) {
+      return {
+        version: windowStateVersion,
+        ...defaultWindowBounds,
+        isMaximized: false
+      };
+    }
+
+    return {
+      version: windowStateVersion,
+      width: parsed.width ?? defaultWindowBounds.width,
+      height: parsed.height ?? defaultWindowBounds.height,
+      x: parsed.x,
+      y: parsed.y,
+      isMaximized: parsed.isMaximized ?? false
+    };
+  } catch {
+    return {
+      version: windowStateVersion,
+      ...defaultWindowBounds,
+      isMaximized: false
+    };
+  }
+}
+
+function isBoundsVisible(state: PersistedWindowState): boolean {
+  if (typeof state.x !== 'number' || typeof state.y !== 'number') {
+    return false;
+  }
+
+  const { x, y, width, height } = state;
+  const displays = screen.getAllDisplays();
+
+  return displays.some(({ workArea }) => {
+    const right = x + width;
+    const bottom = y + height;
+
+    return (
+      right > workArea.x &&
+      x < workArea.x + workArea.width &&
+      bottom > workArea.y &&
+      y < workArea.y + workArea.height
+    );
+  });
+}
+
+function saveWindowState(window: BrowserWindow): void {
+  try {
+    const bounds = window.isMaximized() ? window.getNormalBounds() : window.getBounds();
+    const state: PersistedWindowState = {
+      version: windowStateVersion,
+      ...bounds,
+      isMaximized: window.isMaximized()
+    };
+
+    fs.mkdirSync(path.dirname(windowStateFilePath), { recursive: true });
+    fs.writeFileSync(windowStateFilePath, JSON.stringify(state, null, 2), 'utf-8');
+  } catch {
+    // Ignora errores de persistencia para no afectar el ciclo de vida de la ventana.
+  }
+}
 
 function getWindowState(window: BrowserWindow): WindowState {
   return {
@@ -22,15 +113,22 @@ function notifyWindowState(window: BrowserWindow): void {
 function registerWindowEvents(window: BrowserWindow): void {
   window.on('maximize', () => notifyWindowState(window));
   window.on('unmaximize', () => notifyWindowState(window));
+  window.on('resized', () => saveWindowState(window));
+  window.on('moved', () => saveWindowState(window));
+  window.on('close', () => saveWindowState(window));
 }
 
 function createMainWindow(): BrowserWindow {
+  const persistedState = readWindowState();
+  const hasVisibleBounds = isBoundsVisible(persistedState);
   const window = new BrowserWindow({
-    width: 1180,
-    height: 760,
-    minWidth: 960,
-    minHeight: 640,
-    center: true,
+    width: persistedState.width,
+    height: persistedState.height,
+    x: hasVisibleBounds ? persistedState.x : undefined,
+    y: hasVisibleBounds ? persistedState.y : undefined,
+    minWidth: 750,
+    minHeight: 600,
+    center: !hasVisibleBounds,
     show: false,
     frame: false,
     titleBarStyle: 'hidden',
@@ -45,6 +143,10 @@ function createMainWindow(): BrowserWindow {
 
   registerWindowEvents(window);
   window.once('ready-to-show', () => {
+    if (persistedState.isMaximized) {
+      window.maximize();
+    }
+
     window.show();
     notifyWindowState(window);
   });
