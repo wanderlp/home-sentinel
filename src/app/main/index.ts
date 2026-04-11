@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import { NetworkMonitorService } from '../../core/network/services/network-monitor.service';
 import { DeviceService } from '../../core/services/DeviceService';
 import type { WindowState } from '../../shared/types';
 import log from '../../core/logger';
@@ -235,8 +234,6 @@ function registerIpcHandlers(): void {
 }
 
 async function bootstrap(): Promise<void> {
-  const networkMonitor = new NetworkMonitorService();
-  networkMonitor.initialize();
   registerIpcHandlers();
 
   mainWindow = createMainWindow();
