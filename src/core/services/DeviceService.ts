@@ -6,6 +6,8 @@ import type { DetectedDevice, Device, StoredDevice } from '../../shared/types';
 import log from '../logger';
 
 export class DeviceService {
+  private isScanning = false;
+
   constructor(
     private readonly scanner = new HomeSentinelScanner(),
     private readonly portScanner = new PortScanner(),
@@ -14,8 +16,15 @@ export class DeviceService {
   ) {}
 
   async scanAndDetect(): Promise<DetectedDevice[]> {
+    if (this.isScanning) {
+      log.warn('[DeviceService] Escaneo rechazado — ya hay uno en curso');
+      throw new Error('Ya hay un escaneo en curso. Espera a que termine antes de iniciar otro.');
+    }
+
+    this.isScanning = true;
     log.info('[DeviceService] Iniciando ciclo completo de escaneo y detección');
 
+    try {
     const scannedDevices = await this.portScanner.scanDevices(await this.scanner.scan());
     const classifiedDevices = scannedDevices.map((device) => this.classifier.classify(device));
     const knownDevices = await this.repository.getKnownDevices();
@@ -33,6 +42,9 @@ export class DeviceService {
     log.info(`[DeviceService] Detección completada — total: ${detectedDevices.length} | nuevos: ${nuevos} | modificados: ${modificados} | conocidos: ${conocidos}`);
 
     return detectedDevices;
+    } finally {
+      this.isScanning = false;
+    }
   }
 
   private createKnownDeviceMap(devices: StoredDevice[]): Map<string, StoredDevice> {
