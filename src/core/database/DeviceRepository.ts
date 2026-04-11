@@ -6,7 +6,7 @@ import log from '../logger';
 interface DeviceRow {
   id: number;
   ip: string;
-  mac: string;
+  mac: string | null;
   hostname?: string | null;
   vendor?: string | null;
   deviceType?: string | null;
@@ -36,11 +36,34 @@ export class DeviceRepository {
       await runStatement(database, 'BEGIN TRANSACTION');
 
       for (const device of devices) {
+        const timestamp = new Date().toISOString();
+
         if (!device.mac) {
+          log.warn(`[DeviceRepository] Dispositivo sin MAC en ${device.ip} — se persiste usando IP como clave alternativa`);
+          await runStatement(
+            database,
+            `
+              INSERT INTO devices (ip, mac, hostname, vendor, deviceType, firstSeen, lastSeen)
+              VALUES (?, NULL, ?, ?, ?, ?, ?)
+              ON CONFLICT(ip) WHERE mac IS NULL DO UPDATE SET
+                hostname = excluded.hostname,
+                vendor = excluded.vendor,
+                deviceType = excluded.deviceType,
+                lastSeen = excluded.lastSeen
+            `,
+            [
+              device.ip,
+              device.hostname ?? null,
+              device.vendor ?? null,
+              device.deviceType ?? null,
+              timestamp,
+              timestamp
+            ]
+          );
+          // No se persisten puertos para dispositivos sin MAC
           continue;
         }
 
-        const timestamp = new Date().toISOString();
         await runStatement(
           database,
           `
@@ -136,11 +159,11 @@ export class DeviceRepository {
     return {
       id: row.id,
       ip: row.ip,
-      mac: row.mac,
+      mac: row.mac ?? undefined,
       hostname: row.hostname ?? undefined,
       vendor: row.vendor ?? undefined,
       deviceType: this.mapDeviceType(row.deviceType),
-      openPorts: portsByMac.get(row.mac) ?? [],
+      openPorts: row.mac ? (portsByMac.get(row.mac) ?? []) : [],
       firstSeen: row.firstSeen,
       lastSeen: row.lastSeen
     };

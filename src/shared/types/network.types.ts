@@ -30,7 +30,7 @@ export interface DetectedDevice extends Device {
 export interface StoredDevice {
   id: number;
   ip: string;
-  mac: string;
+  mac?: string;
   hostname?: string;
   vendor?: string;
   deviceType?: DeviceType;

@@ -19,10 +19,10 @@ export class DeviceService {
     const scannedDevices = await this.portScanner.scanDevices(await this.scanner.scan());
     const classifiedDevices = scannedDevices.map((device) => this.classifier.classify(device));
     const knownDevices = await this.repository.getKnownDevices();
-    const knownDevicesByMac = this.createKnownDeviceMap(knownDevices);
+    const knownDevicesMap = this.createKnownDeviceMap(knownDevices);
 
     const detectedDevices = classifiedDevices
-      .map((device) => this.mapDetectedDevice(device, knownDevicesByMac))
+      .map((device) => this.mapDetectedDevice(device, knownDevicesMap))
       .sort((left, right) => this.rankDevice(right) - this.rankDevice(left));
 
     await this.repository.saveDevices(classifiedDevices);
@@ -36,14 +36,23 @@ export class DeviceService {
   }
 
   private createKnownDeviceMap(devices: StoredDevice[]): Map<string, StoredDevice> {
-    return new Map(devices.map((device) => [device.mac, device]));
+    const map = new Map<string, StoredDevice>();
+    for (const device of devices) {
+      if (device.mac) {
+        map.set(`mac:${device.mac}`, device);
+      } else {
+        map.set(`ip:${device.ip}`, device);
+      }
+    }
+    return map;
   }
 
   private mapDetectedDevice(
     device: Device,
-    knownDevicesByMac: Map<string, StoredDevice>
+    knownDevicesMap: Map<string, StoredDevice>
   ): DetectedDevice {
-    const knownDevice = device.mac ? knownDevicesByMac.get(device.mac) : undefined;
+    const lookupKey = device.mac ? `mac:${device.mac}` : `ip:${device.ip}`;
+    const knownDevice = knownDevicesMap.get(lookupKey);
     const isKnown = Boolean(knownDevice);
     const now = new Date().toISOString();
     const changeSummary = knownDevice ? this.buildChangeSummary(device, knownDevice) : [];

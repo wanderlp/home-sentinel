@@ -68,6 +68,12 @@ async function initializeSchema(database: sqlite3.Database): Promise<void> {
   await ensureColumnExists(database, 'devices', 'hostname', 'TEXT');
   await ensureColumnExists(database, 'devices', 'vendor', 'TEXT');
   await ensureColumnExists(database, 'devices', 'deviceType', 'TEXT');
+
+  // Índice parcial para upsert de dispositivos sin MAC usando IP como clave alternativa
+  await runStatement(
+    database,
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_ip_no_mac ON devices(ip) WHERE mac IS NULL`
+  );
 }
 
 function openDatabase(databasePath: string): Promise<sqlite3.Database> {
