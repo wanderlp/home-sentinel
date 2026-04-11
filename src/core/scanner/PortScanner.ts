@@ -1,5 +1,6 @@
 import net from 'node:net';
 import type { Device } from '../../shared/types';
+import log from '../logger';
 
 const DEFAULT_PORT_TIMEOUT_MS = 350;
 const DEFAULT_DEVICE_CONCURRENCY = 10;
@@ -13,6 +14,8 @@ export class PortScanner {
   ) {}
 
   async scanDevices(devices: Device[]): Promise<Device[]> {
+    log.info(`[PortScanner] Escaneando puertos en ${devices.length} dispositivos`);
+
     const enrichedDevices: Device[] = [];
 
     for (let index = 0; index < devices.length; index += this.deviceConcurrency) {
@@ -26,6 +29,9 @@ export class PortScanner {
 
       enrichedDevices.push(...batchResults);
     }
+
+    const totalPorts = enrichedDevices.reduce((sum, d) => sum + (d.openPorts?.length ?? 0), 0);
+    log.info(`[PortScanner] Escaneo de puertos finalizado: ${totalPorts} puertos abiertos detectados`);
 
     return enrichedDevices;
   }

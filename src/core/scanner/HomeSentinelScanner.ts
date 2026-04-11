@@ -3,6 +3,7 @@ import { reverse } from 'node:dns/promises';
 import { networkInterfaces } from 'node:os';
 import { promisify } from 'node:util';
 import type { Device } from '../../shared/types';
+import log from '../logger';
 
 const execFileAsync = promisify(execFile);
 const WINDOWS_PING_TIMEOUT_MS = 1000;
@@ -23,14 +24,21 @@ export class HomeSentinelScanner {
 
     const localNetwork = this.getLocalNetworkInfo();
     const hostIps = this.getHostIpsFromSubnet(localNetwork.ip, localNetwork.netmask);
+
+    log.info(`[Scanner] Iniciando escaneo de ${hostIps.length} IPs en la subred ${localNetwork.ip}`);
+
     const activeDevices = await this.scanIpBatch(hostIps);
     const macByIp = await this.getArpTableMap();
     const devicesWithHostname = await this.enrichDevicesWithHostname(activeDevices);
 
-    return devicesWithHostname.map((device) => ({
+    const result = devicesWithHostname.map((device) => ({
       ...device,
       mac: macByIp.get(device.ip)
     }));
+
+    log.info(`[Scanner] Escaneo finalizado: ${result.length} dispositivos activos encontrados`);
+
+    return result;
   }
 
   private ensureWindowsSupport(): void {
@@ -194,7 +202,8 @@ export class HomeSentinelScanner {
     try {
       const { stdout } = await execFileAsync('arp', ['-a']);
       return this.parseArpTable(stdout);
-    } catch {
+    } catch (error) {
+      log.warn('[Scanner] No se pudo obtener la tabla ARP — los dispositivos no tendrán MAC asignada', error);
       return new Map();
     }
   }

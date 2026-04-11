@@ -4,6 +4,7 @@ import path from 'node:path';
 import { NetworkMonitorService } from '../../core/network/services/network-monitor.service';
 import { DeviceService } from '../../core/services/DeviceService';
 import type { WindowState } from '../../shared/types';
+import log from '../../core/logger';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -165,6 +166,7 @@ function registerIpcHandlers(): void {
     try {
       return await deviceService.scanAndDetect();
     } catch (error) {
+      log.error('[Main] Error durante el escaneo de dispositivos', error);
       const message = error instanceof Error ? error.message : 'Error desconocido al escanear dispositivos.';
       throw new Error(`No se pudo ejecutar el escaneo de dispositivos: ${message}`);
     }
@@ -213,6 +215,7 @@ async function bootstrap(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  log.info(`[Main] Aplicación iniciada — versión ${app.getVersion()} | entorno: ${isDevelopment ? 'desarrollo' : 'producción'}`);
   await bootstrap();
 
   app.on('activate', () => {

@@ -3,6 +3,7 @@ import { HomeSentinelScanner } from '../scanner/HomeSentinelScanner';
 import { PortScanner } from '../scanner/PortScanner';
 import { DeviceClassifier } from '../classification/DeviceClassifier';
 import type { DetectedDevice, Device, StoredDevice } from '../../shared/types';
+import log from '../logger';
 
 export class DeviceService {
   constructor(
@@ -13,6 +14,8 @@ export class DeviceService {
   ) {}
 
   async scanAndDetect(): Promise<DetectedDevice[]> {
+    log.info('[DeviceService] Iniciando ciclo completo de escaneo y detección');
+
     const scannedDevices = await this.portScanner.scanDevices(await this.scanner.scan());
     const classifiedDevices = scannedDevices.map((device) => this.classifier.classify(device));
     const knownDevices = await this.repository.getKnownDevices();
@@ -23,6 +26,11 @@ export class DeviceService {
       .sort((left, right) => this.rankDevice(right) - this.rankDevice(left));
 
     await this.repository.saveDevices(classifiedDevices);
+
+    const nuevos = detectedDevices.filter((d) => d.nuevo).length;
+    const modificados = detectedDevices.filter((d) => d.modificado).length;
+    const conocidos = detectedDevices.filter((d) => d.conocido && !d.nuevo).length;
+    log.info(`[DeviceService] Detección completada — total: ${detectedDevices.length} | nuevos: ${nuevos} | modificados: ${modificados} | conocidos: ${conocidos}`);
 
     return detectedDevices;
   }

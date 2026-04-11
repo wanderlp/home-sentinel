@@ -1,6 +1,7 @@
 import type sqlite3 from 'sqlite3';
 import { allRows, getDatabase, runStatement } from './sqlite';
 import type { Device, DeviceType, StoredDevice } from '../../shared/types';
+import log from '../logger';
 
 interface DeviceRow {
   id: number;
@@ -87,9 +88,12 @@ export class DeviceRepository {
       await runStatement(database, 'COMMIT');
     } catch (error) {
       if (database) {
-        await runStatement(database, 'ROLLBACK').catch(() => undefined);
+        await runStatement(database, 'ROLLBACK').catch((rollbackError) => {
+          log.warn('[DeviceRepository] Error al hacer ROLLBACK de la transacción', rollbackError);
+        });
       }
 
+      log.error('[DeviceRepository] Error al guardar dispositivos en SQLite', error);
       throw new Error(
         `No se pudieron guardar los dispositivos en SQLite: ${this.getErrorMessage(error)}`
       );
@@ -118,6 +122,7 @@ export class DeviceRepository {
 
       return rows.map((row) => this.mapRowToStoredDevice(row, portsByMac));
     } catch (error) {
+      log.error('[DeviceRepository] Error al obtener dispositivos guardados', error);
       throw new Error(
         `No se pudieron obtener los dispositivos guardados: ${this.getErrorMessage(error)}`
       );
