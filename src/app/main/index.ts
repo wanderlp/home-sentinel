@@ -163,8 +163,16 @@ function createMainWindow(): BrowserWindow {
   return window;
 }
 
+function assertAllowedSender(event: Electron.IpcMainInvokeEvent, channel: string): void {
+  if (event.sender !== mainWindow?.webContents) {
+    log.warn(`[Main] Mensaje IPC rechazado en canal '${channel}' — origen no autorizado`);
+    throw new Error('Origen no autorizado');
+  }
+}
+
 function registerIpcHandlers(): void {
-  ipcMain.handle('scan-devices', async () => {
+  ipcMain.handle('scan-devices', async (event) => {
+    assertAllowedSender(event, 'scan-devices');
     try {
       return await deviceService.scanAndDetect();
     } catch (error) {
@@ -175,10 +183,12 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('window:minimize', (event) => {
+    assertAllowedSender(event, 'window:minimize');
     BrowserWindow.fromWebContents(event.sender)?.minimize();
   });
 
   ipcMain.handle('window:toggle-maximize', (event) => {
+    assertAllowedSender(event, 'window:toggle-maximize');
     const window = BrowserWindow.fromWebContents(event.sender);
 
     if (!window) {
@@ -194,10 +204,12 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('window:close', (event) => {
+    assertAllowedSender(event, 'window:close');
     BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
   ipcMain.handle('window:get-state', (event) => {
+    assertAllowedSender(event, 'window:get-state');
     const window = BrowserWindow.fromWebContents(event.sender);
 
     if (!window) {
