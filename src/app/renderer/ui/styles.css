@@ -3,6 +3,39 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Tema oscuro navy — Home Sentinel */
+    --background: 216 57% 8%;          /* #0a1220 */
+    --foreground: 214 32% 91%;         /* #dde6f4 */
+
+    --card: 216 68% 6%;                /* #060f1b */
+    --card-foreground: 214 32% 91%;
+
+    --popover: 216 62% 9%;
+    --popover-foreground: 214 32% 91%;
+
+    --primary: 199 89% 48%;            /* sky-500 */
+    --primary-foreground: 216 68% 6%;
+
+    --secondary: 216 48% 14%;          /* superficie levantada */
+    --secondary-foreground: 214 32% 91%;
+
+    --muted: 216 52% 12%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 199 76% 40%;             /* sky más profundo */
+    --accent-foreground: 214 32% 91%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 216 40% 18%;
+    --input: 216 48% 14%;
+    --ring: 199 89% 48%;
+
+    --radius: 0.5rem;
+  }
+
   html,
   body,
   #root {
@@ -12,11 +45,13 @@
   body {
     margin: 0;
     overflow: hidden;
-    background: #0a1220;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 
   * {
     box-sizing: border-box;
+    border-color: hsl(var(--border));
   }
 
   button,
