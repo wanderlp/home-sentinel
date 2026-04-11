@@ -1,12 +1,16 @@
 import net from 'node:net';
+import pLimit from 'p-limit';
 import type { Device } from '../../shared/types';
 import log from '../logger';
 
 const DEFAULT_PORT_TIMEOUT_MS = 350;
 const DEFAULT_DEVICE_CONCURRENCY = 10;
+const DEFAULT_SOCKET_CONCURRENCY = 50;
 const COMMON_PORTS = [22, 53, 80, 139, 443, 445, 515, 631, 9100, 3389, 62078];
 
 export class PortScanner {
+  private readonly socketLimit = pLimit(DEFAULT_SOCKET_CONCURRENCY);
+
   constructor(
     private readonly timeoutMs = DEFAULT_PORT_TIMEOUT_MS,
     private readonly deviceConcurrency = DEFAULT_DEVICE_CONCURRENCY,
@@ -38,10 +42,12 @@ export class PortScanner {
 
   private async scanPorts(ip: string): Promise<number[]> {
     const portChecks = await Promise.all(
-      this.ports.map(async (port) => ({
-        port,
-        open: await this.isPortOpen(ip, port)
-      }))
+      this.ports.map((port) =>
+        this.socketLimit(async () => ({
+          port,
+          open: await this.isPortOpen(ip, port)
+        }))
+      )
     );
 
     return portChecks
