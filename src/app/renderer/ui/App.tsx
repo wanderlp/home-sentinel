@@ -400,8 +400,10 @@ function WindowControlButton({
       aria-label={label}
       onClick={onClick}
       className={[
-        'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/8 bg-white/[0.03] p-0 leading-none text-slate-300 transition hover:border-sky-200/18 hover:bg-white/[0.07] hover:text-slate-50',
-        isClose ? 'hover:border-rose-400/28 hover:bg-rose-400/16 hover:text-rose-50' : ''
+        'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] p-0 leading-none text-slate-400 transition-all duration-150 hover:scale-110 hover:text-slate-50',
+        isClose
+          ? 'hover:bg-rose-500/70 hover:text-white'
+          : 'hover:bg-sky-500/40 hover:text-sky-100'
       ].join(' ')}
     >
       {children}
@@ -411,7 +413,7 @@ function WindowControlButton({
 
 function MinimizeIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
       <path d="M2 8h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
@@ -419,7 +421,7 @@ function MinimizeIcon(props: SVGProps<SVGSVGElement>) {
 
 function MaximizeIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
       <rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1.4" />
     </svg>
   );
@@ -427,7 +429,7 @@ function MaximizeIcon(props: SVGProps<SVGSVGElement>) {
 
 function RestoreIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
       <path d="M4 2.5h4.5V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M3 4h4.5v4.5H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
     </svg>
@@ -436,7 +438,7 @@ function RestoreIcon(props: SVGProps<SVGSVGElement>) {
 
 function CloseIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" {...props}>
+    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" {...props}>
       <path d="M3 3l6 6M9 3 3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
