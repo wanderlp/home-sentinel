@@ -4,6 +4,10 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "strict": true,
+    // Requerido para proyectos Electron: electron.d.ts mezcla tipos del proceso principal
+    // y del renderer en un solo archivo, lo que genera conflictos con @types/node cuando
+    // el tsconfig del proceso principal no incluye lib DOM (comportamiento correcto).
+    // Todos los errores que aparecen sin esta opción son falsos positivos en node_modules.
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
