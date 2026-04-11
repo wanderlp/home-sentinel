@@ -25,8 +25,22 @@ export class DeviceService {
     log.info('[DeviceService] Iniciando ciclo completo de escaneo y detección');
 
     try {
-    const scannedDevices = await this.portScanner.scanDevices(await this.scanner.scan());
-    const classifiedDevices = scannedDevices.map((device) => this.classifier.classify(device));
+    // Fase 1: ping + ARP — secuencial (el ARP requiere que los pings hayan poblado la caché)
+    const activeDevices = await this.scanner.scanActiveDevices();
+
+    // Fase 2: port scan + hostname en paralelo para reducir el tiempo total de escaneo
+    const [devicesWithPorts, devicesWithHostnames] = await Promise.all([
+      this.portScanner.scanDevices(activeDevices),
+      this.scanner.enrichWithHostnames(activeDevices)
+    ]);
+
+    const hostnameByIp = new Map(devicesWithHostnames.map((d) => [d.ip, d.hostname]));
+    const mergedDevices = devicesWithPorts.map((device) => ({
+      ...device,
+      hostname: hostnameByIp.get(device.ip) ?? device.hostname
+    }));
+
+    const classifiedDevices = mergedDevices.map((device) => this.classifier.classify(device));
     const knownDevices = await this.repository.getKnownDevices();
     const knownDevicesMap = this.createKnownDeviceMap(knownDevices);
 

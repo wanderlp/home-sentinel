@@ -20,6 +20,17 @@ export class HomeSentinelScanner {
   constructor(private readonly concurrency = DEFAULT_CONCURRENCY) {}
 
   async scan(): Promise<Device[]> {
+    const activeDevices = await this.scanActiveDevices();
+    return this.enrichWithHostnames(activeDevices);
+  }
+
+  /**
+   * Fase 1 del escaneo: ping a toda la subred + tabla ARP.
+   * Retorna los dispositivos activos con su MAC pero sin hostname.
+   * Separarla permite iniciar el escaneo de puertos en paralelo con
+   * la resolución de hostnames (fase 2).
+   */
+  async scanActiveDevices(): Promise<Device[]> {
     this.ensureWindowsSupport();
 
     const localNetwork = this.getLocalNetworkInfo();
@@ -29,16 +40,23 @@ export class HomeSentinelScanner {
 
     const activeDevices = await this.scanIpBatch(hostIps);
     const macByIp = await this.getArpTableMap();
-    const devicesWithHostname = await this.enrichDevicesWithHostname(activeDevices);
 
-    const result = devicesWithHostname.map((device) => ({
+    const result = activeDevices.map((device) => ({
       ...device,
       mac: macByIp.get(device.ip)
     }));
 
-    log.info(`[Scanner] Escaneo finalizado: ${result.length} dispositivos activos encontrados`);
+    log.info(`[Scanner] Ping completado: ${result.length} dispositivos activos encontrados`);
 
     return result;
+  }
+
+  /**
+   * Fase 2 del escaneo: resolución de hostname por DNS inverso y ping -a.
+   * Puede ejecutarse en paralelo con el escaneo de puertos.
+   */
+  async enrichWithHostnames(devices: Device[]): Promise<Device[]> {
+    return this.enrichDevicesWithHostname(devices);
   }
 
   private ensureWindowsSupport(): void {
