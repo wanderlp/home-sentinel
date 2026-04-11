@@ -6,6 +6,12 @@ Este archivo proporciona orientación a Claude Code (claude.ai/code) al trabajar
 
 **Toda la comunicación en este proyecto debe realizarse en español**, tanto las respuestas del asistente como los comentarios de código, nombres de variables, etiquetas de la UI y documentación.
 
+## Flujo de trabajo con Git
+
+**No hacer `commit` ni `push` de forma automática.** Siempre presentar los cambios al programador para que pueda revisarlos, probarlos y confirmar que todo funciona correctamente antes de proceder. Solo hacer commit o push cuando el programador lo solicite explícitamente.
+
+Antes de hacer commit, revisar todos los cambios pendientes y evaluar si pertenecen a temas distintos. Si es así, separarlos en varios commits atómicos (uno por tema). Si todos los cambios corresponden a un mismo propósito, subirlos en un solo commit.
+
 ## Comandos
 
 ```bash
