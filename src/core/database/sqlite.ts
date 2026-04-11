@@ -74,6 +74,17 @@ async function initializeSchema(database: sqlite3.Database): Promise<void> {
     database,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_ip_no_mac ON devices(ip) WHERE mac IS NULL`
   );
+
+  // Índices de rendimiento para queries frecuentes
+  await runStatement(
+    database,
+    `CREATE INDEX IF NOT EXISTS idx_devices_lastSeen ON devices(lastSeen DESC)`
+  );
+
+  await runStatement(
+    database,
+    `CREATE INDEX IF NOT EXISTS idx_device_ports_mac ON device_ports(deviceMac)`
+  );
 }
 
 function openDatabase(databasePath: string): Promise<sqlite3.Database> {
