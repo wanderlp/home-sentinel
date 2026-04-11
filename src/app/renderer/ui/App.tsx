@@ -96,7 +96,7 @@ export function App() {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_24%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.10),transparent_20%),linear-gradient(180deg,#04070d_0%,#0a1220_100%)] text-slate-100">
-      <section className="grid min-h-screen grid-rows-[auto_1fr] overflow-hidden bg-[linear-gradient(180deg,rgba(9,17,29,0.96)_0%,rgba(8,15,27,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <section className="grid h-screen grid-rows-[auto_1fr] overflow-hidden bg-[linear-gradient(180deg,rgba(9,17,29,0.96)_0%,rgba(8,15,27,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         <header
           className="flex h-11 flex-nowrap items-center justify-between gap-3 overflow-hidden border-b border-sky-200/10 bg-[linear-gradient(180deg,rgba(13,24,40,0.98)_0%,rgba(10,20,34,0.98)_100%)] px-4 pr-3"
           style={dragRegionStyle}
