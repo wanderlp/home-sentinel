@@ -72,7 +72,7 @@ const PORT_HINTS: Array<{ ports: number[]; deviceType: DeviceType; score: number
 ];
 
 interface InferenceCandidate {
-  score: number;
+  scores: number[];
   reasons: string[];
 }
 
@@ -158,12 +158,12 @@ export class DeviceClassifier {
 
   private createCandidateMap(): Record<DeviceType, InferenceCandidate> {
     return {
-      router: { score: 0, reasons: [] },
-      pc: { score: 0, reasons: [] },
-      celular: { score: 0, reasons: [] },
-      impresora: { score: 0, reasons: [] },
-      iot: { score: 0, reasons: [] },
-      desconocido: { score: 0, reasons: [] }
+      router: { scores: [], reasons: [] },
+      pc: { scores: [], reasons: [] },
+      celular: { scores: [], reasons: [] },
+      impresora: { scores: [], reasons: [] },
+      iot: { scores: [], reasons: [] },
+      desconocido: { scores: [], reasons: [] }
     };
   }
 
@@ -173,16 +173,27 @@ export class DeviceClassifier {
     score: number,
     reason: string
   ): void {
-    candidates[deviceType].score += score;
+    candidates[deviceType].scores.push(score);
     candidates[deviceType].reasons.push(reason);
+  }
+
+  /**
+   * Combina múltiples evidencias independientes usando el modelo noisy-OR:
+   * cada nueva evidencia reduce la incertidumbre restante con rendimientos
+   * decrecientes, evitando que evidencias débiles acumuladas inflen la confianza.
+   *
+   * Ejemplo: scores [0.6, 0.4, 0.35] → 1 - (0.4 × 0.6 × 0.65) ≈ 0.84
+   */
+  private combineScores(scores: number[]): number {
+    return scores.reduce((combined, score) => 1 - (1 - combined) * (1 - score), 0);
   }
 
   private resolveBestCandidate(
     candidates: Record<DeviceType, InferenceCandidate>
   ): { deviceType: DeviceType; confidence: number; reasons: string[] } | null {
     const rankedCandidates = (Object.entries(candidates) as Array<[DeviceType, InferenceCandidate]>)
-      .filter(([, candidate]) => candidate.score > 0)
-      .sort((left, right) => right[1].score - left[1].score);
+      .filter(([, candidate]) => candidate.scores.length > 0)
+      .sort((left, right) => this.combineScores(right[1].scores) - this.combineScores(left[1].scores));
 
     if (rankedCandidates.length === 0) {
       return null;
@@ -192,7 +203,7 @@ export class DeviceClassifier {
 
     return {
       deviceType,
-      confidence: Math.min(0.98, Number(candidate.score.toFixed(2))),
+      confidence: Number(this.combineScores(candidate.scores).toFixed(2)),
       reasons: candidate.reasons
     };
   }
