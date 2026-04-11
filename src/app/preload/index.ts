@@ -1,14 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppBootstrapState, DetectedDevice, WindowState } from '../../shared/types';
+import type { AppBootstrapState, HomeSentinelAPI, WindowState } from '../../shared/types';
 
 const bootstrapState: AppBootstrapState = {
   status: 'idle',
   scannedDevices: 0
 };
 
-contextBridge.exposeInMainWorld('homeSentinel', {
+const api: HomeSentinelAPI = {
   getBootstrapState: (): AppBootstrapState => bootstrapState,
-  scanDevices: (): Promise<DetectedDevice[]> => ipcRenderer.invoke('scan-devices'),
+  scanDevices: () => ipcRenderer.invoke('scan-devices'),
   windowControls: {
     minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),
     toggleMaximize: (): Promise<void> => ipcRenderer.invoke('window:toggle-maximize'),
@@ -26,4 +26,6 @@ contextBridge.exposeInMainWorld('homeSentinel', {
       };
     }
   }
-});
+};
+
+contextBridge.exposeInMainWorld('homeSentinel', api);

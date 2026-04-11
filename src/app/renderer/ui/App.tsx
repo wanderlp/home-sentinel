@@ -1,22 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { CSSProperties, SVGProps } from 'react';
-import type { AppBootstrapState, DetectedDevice, WindowState } from '../../../shared/types';
+import type { DetectedDevice, HomeSentinelAPI } from '../../../shared/types';
 
 type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
 
 declare global {
   interface Window {
-    homeSentinel: {
-      getBootstrapState: () => AppBootstrapState;
-      scanDevices: () => Promise<DetectedDevice[]>;
-      windowControls: {
-        minimize: () => Promise<void>;
-        toggleMaximize: () => Promise<void>;
-        close: () => Promise<void>;
-        getState: () => Promise<WindowState>;
-        onStateChange: (callback: (state: WindowState) => void) => () => void;
-      };
-    };
+    homeSentinel: HomeSentinelAPI;
   }
 }
 
