@@ -12,6 +12,10 @@ Este archivo proporciona orientación a Claude Code (claude.ai/code) al trabajar
 
 Antes de hacer commit, revisar todos los cambios pendientes y evaluar si pertenecen a temas distintos. Si es así, separarlos en varios commits atómicos (uno por tema). Si todos los cambios corresponden a un mismo propósito, subirlos en un solo commit.
 
+## GitHub — Issues y Pull Requests
+
+**No crear comentarios, cerrar, abrir ni modificar issues o pull requests de forma automática.** El programador siempre debe revisar y aprobar cualquier acción sobre GitHub antes de ejecutarla. Solo interactuar con issues o PRs cuando el programador lo solicite explícitamente.
+
 ## Comandos
 
 ```bash
