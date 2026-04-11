@@ -1,4 +1,4 @@
-import type { AppBootstrapState } from './app.types';
+import type { AppStatus } from './app.types';
 import type { DetectedDevice } from './network.types';
 import type { WindowState } from './app.types';
 
@@ -11,7 +11,7 @@ export interface WindowControls {
 }
 
 export interface HomeSentinelAPI {
-  getBootstrapState: () => AppBootstrapState;
   scanDevices: () => Promise<DetectedDevice[]>;
+  onStatusChange: (callback: (status: AppStatus) => void) => () => void;
   windowControls: WindowControls;
 }

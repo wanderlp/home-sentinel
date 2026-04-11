@@ -1,5 +1,7 @@
+export type AppStatus = 'idle' | 'booting' | 'ready';
+
 export interface AppBootstrapState {
-  status: 'idle' | 'booting' | 'ready';
+  status: AppStatus;
   scannedDevices: number;
 }
 

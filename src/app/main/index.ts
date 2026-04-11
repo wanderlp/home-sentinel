@@ -150,6 +150,8 @@ function createMainWindow(): BrowserWindow {
 
     window.show();
     notifyWindowState(window);
+    window.webContents.send('app-status-changed', 'ready');
+    log.info('[Main] Estado de la app notificado al renderer: ready');
   });
 
   if (isDevelopment) {

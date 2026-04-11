@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { CSSProperties, SVGProps } from 'react';
-import type { DetectedDevice, HomeSentinelAPI } from '../../../shared/types';
+import type { HomeSentinelAPI } from '../../../shared/types';
+import { useAppStore } from '../store/useAppStore';
 
 type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
 
@@ -19,39 +20,42 @@ const noDragRegionStyle = {
 } as CSSProperties;
 
 export function App() {
-  const bootstrapState = window.homeSentinel?.getBootstrapState();
-  const [devices, setDevices] = useState<DetectedDevice[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { status, devices, isScanning, errorMessage, isMaximized, setStatus, setDevices, setScanning, setError, setMaximized } = useAppStore();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [typeFilter, setTypeFilter] = useState<string>('todos');
   const [selectedDeviceKey, setSelectedDeviceKey] = useState<string | null>(null);
-  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
-    const controls = window.homeSentinel?.windowControls;
+    const api = window.homeSentinel;
 
-    if (!controls) {
+    if (!api) {
       return;
     }
 
+    // Suscribirse a cambios de estado de la app
+    const unsubscribeStatus = api.onStatusChange((newStatus) => {
+      setStatus(newStatus);
+    });
+
+    // Obtener estado inicial de la ventana y suscribirse a cambios
     let isMounted = true;
 
-    void controls.getState().then((state) => {
+    void api.windowControls.getState().then((state) => {
       if (isMounted) {
-        setIsMaximized(state.isMaximized);
+        setMaximized(state.isMaximized);
       }
     });
 
-    const unsubscribe = controls.onStateChange((state) => {
-      setIsMaximized(state.isMaximized);
+    const unsubscribeWindow = api.windowControls.onStateChange((state) => {
+      setMaximized(state.isMaximized);
     });
 
     return () => {
       isMounted = false;
-      unsubscribe();
+      unsubscribeStatus();
+      unsubscribeWindow();
     };
-  }, []);
+  }, [setStatus, setMaximized]);
 
   const filteredDevices = devices.filter((device) => {
     const matchesStatus =
@@ -77,8 +81,8 @@ export function App() {
   };
 
   async function handleScan(): Promise<void> {
-    setIsLoading(true);
-    setErrorMessage(null);
+    setScanning(true);
+    setError(null);
 
     try {
       const results = await window.homeSentinel.scanDevices();
@@ -88,9 +92,9 @@ export function App() {
       const message =
         error instanceof Error ? error.message : 'No se pudo ejecutar el escaneo de red.';
 
-      setErrorMessage(message);
+      setError(message);
     } finally {
-      setIsLoading(false);
+      setScanning(false);
     }
   }
 
@@ -142,7 +146,7 @@ export function App() {
           </p>
 
           <div className="mt-7 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
-            <StatusCard label="Estado" value={isLoading ? 'Escaneando...' : bootstrapState?.status ?? 'idle'} />
+            <StatusCard label="Estado" value={isScanning ? 'Escaneando...' : status} />
             <StatusCard label="Resultados" value={String(summary.total)} />
             <StatusCard label="Nuevos" value={String(summary.nuevos)} />
             <StatusCard label="Modificados" value={String(summary.modificados)} />
@@ -153,10 +157,10 @@ export function App() {
               className="min-w-[190px] rounded-full bg-[linear-gradient(135deg,#7dbdff_0%,#4ed6c2_100%)] px-5 py-3.5 text-[0.98rem] font-extrabold text-slate-950 shadow-[0_12px_30px_rgba(78,214,194,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(78,214,194,0.26)] disabled:cursor-wait disabled:opacity-65 disabled:shadow-none max-[640px]:w-full"
               type="button"
               onClick={() => void handleScan()}
-              disabled={isLoading}
+              disabled={isScanning}
               style={noDragRegionStyle}
             >
-              {isLoading ? 'Escaneando...' : 'Escanear red'}
+              {isScanning ? 'Escaneando...' : 'Escanear red'}
             </button>
             {errorMessage ? <p className="m-0 text-rose-300">{errorMessage}</p> : null}
           </div>

@@ -1,14 +1,21 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppBootstrapState, HomeSentinelAPI, WindowState } from '../../shared/types';
-
-const bootstrapState: AppBootstrapState = {
-  status: 'idle',
-  scannedDevices: 0
-};
+import type { AppStatus, HomeSentinelAPI, WindowState } from '../../shared/types';
 
 const api: HomeSentinelAPI = {
-  getBootstrapState: (): AppBootstrapState => bootstrapState,
   scanDevices: () => ipcRenderer.invoke('scan-devices'),
+
+  onStatusChange: (callback: (status: AppStatus) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: AppStatus) => {
+      callback(status);
+    };
+
+    ipcRenderer.on('app-status-changed', listener);
+
+    return () => {
+      ipcRenderer.removeListener('app-status-changed', listener);
+    };
+  },
+
   windowControls: {
     minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),
     toggleMaximize: (): Promise<void> => ipcRenderer.invoke('window:toggle-maximize'),
