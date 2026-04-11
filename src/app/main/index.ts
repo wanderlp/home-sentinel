@@ -26,6 +26,20 @@ interface PersistedWindowState {
   isMaximized: boolean;
 }
 
+function sanitizeDimension(value: unknown, fallback: number, min: number, max: number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max) {
+    return value;
+  }
+  return fallback;
+}
+
+function sanitizeCoordinate(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= -32000 && value <= 32000) {
+    return value;
+  }
+  return undefined;
+}
+
 function readWindowState(): PersistedWindowState {
   try {
     if (!fs.existsSync(windowStateFilePath)) {
@@ -49,11 +63,11 @@ function readWindowState(): PersistedWindowState {
 
     return {
       version: windowStateVersion,
-      width: parsed.width ?? defaultWindowBounds.width,
-      height: parsed.height ?? defaultWindowBounds.height,
-      x: parsed.x,
-      y: parsed.y,
-      isMaximized: parsed.isMaximized ?? false
+      width: sanitizeDimension(parsed.width, defaultWindowBounds.width, 100, 32000),
+      height: sanitizeDimension(parsed.height, defaultWindowBounds.height, 100, 32000),
+      x: sanitizeCoordinate(parsed.x),
+      y: sanitizeCoordinate(parsed.y),
+      isMaximized: typeof parsed.isMaximized === 'boolean' ? parsed.isMaximized : false
     };
   } catch {
     return {
