@@ -13,24 +13,26 @@ export async function getDatabase(): Promise<sqlite3.Database> {
     return databaseInstance;
   }
 
-  if (databasePromise) {
-    return databasePromise;
+  if (!databasePromise) {
+    databasePromise = initializeDatabase();
   }
 
-  fs.mkdirSync(DATABASE_DIRECTORY, { recursive: true });
-
-  databasePromise = openDatabase(DATABASE_PATH)
-    .then(async (database) => {
-      await runStatement(database, 'PRAGMA journal_mode = WAL');
-      await initializeSchema(database);
-      databaseInstance = database;
-      return database;
-    })
-    .finally(() => {
-      databasePromise = null;
-    });
-
   return databasePromise;
+}
+
+async function initializeDatabase(): Promise<sqlite3.Database> {
+  try {
+    fs.mkdirSync(DATABASE_DIRECTORY, { recursive: true });
+    const database = await openDatabase(DATABASE_PATH);
+    await runStatement(database, 'PRAGMA journal_mode = WAL');
+    await initializeSchema(database);
+    databaseInstance = database;
+    return database;
+  } catch (error) {
+    // Permite reintentar en el siguiente llamado
+    databasePromise = null;
+    throw error;
+  }
 }
 
 async function initializeSchema(database: sqlite3.Database): Promise<void> {
