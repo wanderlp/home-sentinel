@@ -190,7 +190,14 @@ export class DeviceRepository {
       return undefined;
     }
 
-    return deviceType as DeviceType;
+    const VALID_DEVICE_TYPES: DeviceType[] = ['router', 'pc', 'celular', 'impresora', 'iot', 'desconocido'];
+
+    if (VALID_DEVICE_TYPES.includes(deviceType as DeviceType)) {
+      return deviceType as DeviceType;
+    }
+
+    log.warn(`[DeviceRepository] Valor de deviceType desconocido en BD: "${deviceType}" — se normaliza a "desconocido"`);
+    return 'desconocido';
   }
 
   private getErrorMessage(error: unknown): string {
