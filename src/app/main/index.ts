@@ -1,8 +1,9 @@
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { DeviceService } from '../../core/services/DeviceService';
-import type { WindowState } from '../../shared/types';
+import type { LocalNetworkInfo, WindowState } from '../../shared/types';
 import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 import log from '../../core/logger';
 
@@ -177,7 +178,34 @@ function assertAllowedSender(event: Electron.IpcMainInvokeEvent, channel: string
   }
 }
 
+function getLocalNetworkInfo(): LocalNetworkInfo {
+  const hostname = os.hostname();
+  const interfaces = os.networkInterfaces();
+
+  for (const [name, addrs] of Object.entries(interfaces)) {
+    if (!addrs) continue;
+    for (const addr of addrs) {
+      if (addr.family === 'IPv4' && !addr.internal) {
+        return {
+          hostname,
+          ip: addr.address,
+          mac: addr.mac,
+          interfaceName: name,
+          subnet: addr.netmask
+        };
+      }
+    }
+  }
+
+  return { hostname, ip: 'No disponible', mac: 'No disponible', interfaceName: 'No disponible', subnet: 'No disponible' };
+}
+
 function registerIpcHandlers(): void {
+  ipcMain.handle(IPC_CHANNELS.GET_LOCAL_NETWORK_INFO, (event) => {
+    assertAllowedSender(event, IPC_CHANNELS.GET_LOCAL_NETWORK_INFO);
+    return getLocalNetworkInfo();
+  });
+
   ipcMain.handle(IPC_CHANNELS.SCAN_DEVICES, async (event) => {
     assertAllowedSender(event, IPC_CHANNELS.SCAN_DEVICES);
     try {

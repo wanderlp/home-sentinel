@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { CSSProperties, SVGProps } from 'react';
-import type { HomeSentinelAPI } from '../../../shared/types';
+import type { HomeSentinelAPI, LocalNetworkInfo } from '../../../shared/types';
 import { useAppStore } from '../store/useAppStore';
 
 type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
@@ -24,6 +24,7 @@ export function App() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [typeFilter, setTypeFilter] = useState<string>('todos');
   const [selectedDeviceKey, setSelectedDeviceKey] = useState<string | null>(null);
+  const [localInfo, setLocalInfo] = useState<LocalNetworkInfo | null>(null);
 
   useEffect(() => {
     const api = window.homeSentinel;
@@ -43,6 +44,12 @@ export function App() {
     void api.windowControls.getState().then((state) => {
       if (isMounted) {
         setMaximized(state.isMaximized);
+      }
+    });
+
+    void api.getLocalNetworkInfo().then((info) => {
+      if (isMounted) {
+        setLocalInfo(info);
       }
     });
 
@@ -137,19 +144,30 @@ export function App() {
           </div>
         </header>
 
-        <section className="overflow-auto bg-[radial-gradient(circle_at_top_left,rgba(41,95,158,0.18),transparent_24%),linear-gradient(180deg,rgba(8,16,28,0.98)_0%,rgba(7,14,24,0.98)_100%)] px-8 py-8 max-[860px]:px-5 max-[860px]:py-6">
-          <p className="mb-3 text-[0.8rem] uppercase tracking-[0.2em] text-sky-300">Home Sentinel</p>
-          <h1 className="text-[clamp(2.1rem,4vw,3.2rem)] font-semibold text-slate-50">Monitor de red local</h1>
-          <p className="mt-4 max-w-[60ch] text-[1rem] leading-7 text-slate-300">
-            Ejecuta un escaneo de la red local para identificar dispositivos activos
-            y marcar si ya eran conocidos o si aparecieron por primera vez.
-          </p>
+        <section className="flex min-h-0 flex-1 flex-col overflow-auto bg-[radial-gradient(circle_at_top_left,rgba(41,95,158,0.18),transparent_24%),linear-gradient(180deg,rgba(8,16,28,0.98)_0%,rgba(7,14,24,0.98)_100%)]">
+        <div className="flex-1 overflow-auto px-8 py-8 max-[860px]:px-5 max-[860px]:py-6">
+          <div className="flex flex-wrap gap-4">
+            {/* Tarjeta grande: info de red local */}
+            <article className="flex min-w-[260px] flex-1 flex-col gap-4 rounded-[20px] border border-sky-200/15 bg-[linear-gradient(180deg,rgba(13,24,40,0.85)_0%,rgba(9,18,32,0.85)_100%)] p-5">
+              <div className="flex items-center gap-2.5">
+                <NetworkIcon className="h-4 w-4 shrink-0 text-sky-400" />
+                <span className="text-[0.78rem] uppercase tracking-[0.18em] text-sky-300">Este equipo</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <LocalInfoField label="Hostname" value={localInfo?.hostname ?? '—'} />
+                <LocalInfoField label="IP local" value={localInfo?.ip ?? '—'} />
+                <LocalInfoField label="MAC" value={localInfo?.mac ?? '—'} />
+                <LocalInfoField label="Adaptador" value={localInfo?.interfaceName ?? '—'} />
+                <LocalInfoField label="Máscara" value={localInfo?.subnet ?? '—'} />
+              </div>
+            </article>
 
-          <div className="mt-7 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
-            <StatusCard label="Estado" value={isScanning ? 'Escaneando...' : status} />
-            <StatusCard label="Resultados" value={String(summary.total)} />
-            <StatusCard label="Nuevos" value={String(summary.nuevos)} />
-            <StatusCard label="Modificados" value={String(summary.modificados)} />
+            {/* 3 tarjetas de resumen del escaneo */}
+            <div className="flex shrink-0 flex-col justify-between gap-3">
+              <StatusCard label="Resultados" value={String(summary.total)} />
+              <StatusCard label="Nuevos" value={String(summary.nuevos)} />
+              <StatusCard label="Modificados" value={String(summary.modificados)} />
+            </div>
           </div>
 
           <div className="mt-7 grid gap-3">
@@ -325,15 +343,51 @@ export function App() {
               </div>
             )}
           </section>
-        </section>
+        </div>
+
+        {/* Status bar inferior */}
+        <footer
+          className="flex h-7 shrink-0 items-center justify-between border-t border-sky-200/10 bg-[rgba(8,15,27,0.98)] px-4"
+          style={noDragRegionStyle}
+        >
+          <div className="flex items-center gap-2">
+            <span className={`h-1.5 w-1.5 rounded-full ${isScanning ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+            <span className="text-[0.73rem] text-slate-400">
+              Estado: <span className="text-slate-200">{isScanning ? 'escaneando...' : status}</span>
+            </span>
+          </div>
+          {localInfo ? (
+            <span className="text-[0.73rem] text-slate-500">{localInfo.ip}</span>
+          ) : null}
+        </footer>
       </section>
+    </section>
     </main>
+  );
+}
+
+function LocalInfoField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="text-[0.75rem] uppercase tracking-[0.1em] text-slate-500">{label}</span>
+      <strong className="mt-0.5 block break-all text-[0.88rem] font-medium text-slate-200">{value}</strong>
+    </div>
+  );
+}
+
+function NetworkIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 1v2M8 13v2M1 8h2M13 8h2" />
+      <path d="M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M11.4 4.6l-1.4 1.4M4.6 11.4l-1.4 1.4" />
+    </svg>
   );
 }
 
 function StatusCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-[18px] border border-sky-200/10 bg-[linear-gradient(180deg,rgba(23,38,60,0.72)_0%,rgba(13,24,40,0.72)_100%)] p-[18px]">
+    <article className="w-[150px] rounded-[18px] border border-sky-200/10 bg-[linear-gradient(180deg,rgba(23,38,60,0.72)_0%,rgba(13,24,40,0.72)_100%)] p-[18px]">
       <span className="mb-1.5 block text-[0.9rem] text-slate-400">{label}</span>
       <strong className="text-2xl font-semibold text-slate-50">{value}</strong>
     </article>

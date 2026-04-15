@@ -1,3 +1,11 @@
+export interface LocalNetworkInfo {
+  hostname: string;
+  ip: string;
+  mac: string;
+  interfaceName: string;
+  subnet: string;
+}
+
 export type DeviceType =
   | 'router'
   | 'pc'
