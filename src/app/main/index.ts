@@ -215,19 +215,32 @@ async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAd
   };
 
   try {
-    // ipconfig /all para gateway, DNS, DHCP y descripción
+    // ipconfig /all pone una línea en blanco entre el encabezado del adaptador y sus campos,
+    // por eso no se puede hacer split por párrafos. Se recorre línea a línea buscando el
+    // encabezado exacto y luego se acumulan las líneas indentadas que le siguen.
     const { stdout: ipconfigOut } = await execFileAsync('ipconfig', ['/all'], { encoding: 'utf8' });
-    const blocks = ipconfigOut.split(/\r?\n\r?\n/);
+    const lines = ipconfigOut.split(/\r?\n/);
+    const escapedName = interfaceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const headerRegex = new RegExp(`${escapedName}\\s*:`, 'i');
 
-    for (const block of blocks) {
-      // Verificar que la cabecera del bloque termina exactamente con "<interfaceName>:"
-      // para evitar tomar adaptadores virtuales que contienen el mismo nombre parcialmente
-      const headerLine = block.trimStart().split(/\r?\n/)[0] ?? '';
-      const escapedName = interfaceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      if (!new RegExp(`${escapedName}\\s*:`, 'i').test(headerLine)) continue;
+    let inBlock = false;
+    const blockLines: string[] = [];
+
+    for (const line of lines) {
+      const isHeader = /^\S/.test(line) && line.trimEnd().endsWith(':');
+      if (isHeader) {
+        if (inBlock) break;        // Siguiente adaptador: salir
+        if (headerRegex.test(line)) inBlock = true;
+        continue;
+      }
+      if (inBlock && line.trim()) blockLines.push(line);
+    }
+
+    if (blockLines.length > 0) {
+      const blockText = blockLines.join('\n');
 
       const field = (pattern: RegExp): string => {
-        const m = block.match(pattern);
+        const m = blockText.match(pattern);
         return m ? m[1].trim().replace(/\s+/g, ' ') : '';
       };
 
@@ -241,14 +254,12 @@ async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAd
       const dhcpVal = field(/DHCP habilitado[.\s]*:\s*(\S+)/i) || field(/DHCP Enabled[.\s]*:\s*(\S+)/i);
       detail.dhcp = /s[ií]/i.test(dhcpVal) || /yes/i.test(dhcpVal);
 
-      // DNS: puede haber múltiples líneas — buscar todas las IPs en líneas de DNS
-      const dnsMatch = block.match(/Servidores DNS[.\s]*:(.+?)(?=\r?\n\s*\w|\r?\n\r?\n|$)/is) ||
-                       block.match(/DNS Servers[.\s]*:(.+?)(?=\r?\n\s*\w|\r?\n\r?\n|$)/is);
+      // DNS puede ocupar varias líneas continuación (sin etiqueta)
+      const dnsMatch = blockText.match(/Servidores DNS[.\s]*:(.+?)(?=\n\s*\S[^:]+:|$)/is) ||
+                       blockText.match(/DNS Servers[.\s]*:(.+?)(?=\n\s*\S[^:]+:|$)/is);
       if (dnsMatch) {
         detail.dns = [...dnsMatch[1].matchAll(/\b(\d{1,3}(?:\.\d{1,3}){3})\b/g)].map(m => m[1]);
       }
-
-      break;
     }
   } catch {
     // Silenciar errores de ipconfig
