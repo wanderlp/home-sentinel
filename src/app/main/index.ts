@@ -5,6 +5,7 @@ import path from 'node:path';
 import { DeviceService } from '../../core/services/DeviceService';
 import { PortScanner } from '../../core/scanner/PortScanner';
 import { execFile } from 'node:child_process';
+import https from 'node:https';
 import { promisify } from 'node:util';
 import type { LocalNetworkInfo, NetworkAdapterDetail, WindowState } from '../../shared/types';
 
@@ -184,26 +185,75 @@ function assertAllowedSender(event: Electron.IpcMainInvokeEvent, channel: string
   }
 }
 
-function getLocalNetworkInfo(): LocalNetworkInfo {
+function fetchPublicIp(): Promise<string> {
+  return new Promise((resolve) => {
+    const req = https.get('https://api.ipify.org?format=json', { timeout: 5000 }, (res) => {
+      let data = '';
+      res.on('data', (chunk: Buffer) => { data += chunk.toString(); });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data) as { ip: string };
+          resolve(parsed.ip);
+        } catch {
+          resolve('No disponible');
+        }
+      });
+    });
+    req.on('error', () => resolve('No disponible'));
+    req.on('timeout', () => { req.destroy(); resolve('No disponible'); });
+  });
+}
+
+async function detectConnectionType(interfaceName: string): Promise<'wifi' | 'ethernet' | 'unknown'> {
+  try {
+    const { stdout } = await execFileAsync('netsh', ['wlan', 'show', 'interfaces'], { encoding: 'utf8' });
+    const matches = [...stdout.matchAll(/^\s+(?:Nombre|Name)\s*:\s*(.+)$/gim)];
+    for (const m of matches) {
+      if (m[1].trim().toLowerCase() === interfaceName.toLowerCase()) return 'wifi';
+    }
+    return 'ethernet';
+  } catch {
+    return 'unknown';
+  }
+}
+
+async function getLocalNetworkInfo(): Promise<LocalNetworkInfo> {
   const hostname = os.hostname();
+  const uptimeSeconds = Math.floor(os.uptime());
   const interfaces = os.networkInterfaces();
 
   for (const [name, addrs] of Object.entries(interfaces)) {
     if (!addrs) continue;
     for (const addr of addrs) {
       if (addr.family === 'IPv4' && !addr.internal) {
+        const [connectionType, publicIp] = await Promise.all([
+          detectConnectionType(name),
+          fetchPublicIp()
+        ]);
         return {
           hostname,
           ip: addr.address,
           mac: addr.mac,
           interfaceName: name,
-          subnet: addr.netmask
+          subnet: addr.netmask,
+          connectionType,
+          publicIp,
+          uptimeSeconds
         };
       }
     }
   }
 
-  return { hostname, ip: 'No disponible', mac: 'No disponible', interfaceName: 'No disponible', subnet: 'No disponible' };
+  return {
+    hostname,
+    ip: 'No disponible',
+    mac: 'No disponible',
+    interfaceName: 'No disponible',
+    subnet: 'No disponible',
+    connectionType: 'unknown',
+    publicIp: 'No disponible',
+    uptimeSeconds
+  };
 }
 
 async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAdapterDetail> {
@@ -306,7 +356,7 @@ async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAd
 }
 
 function registerIpcHandlers(): void {
-  ipcMain.handle(IPC_CHANNELS.GET_LOCAL_NETWORK_INFO, (event) => {
+  ipcMain.handle(IPC_CHANNELS.GET_LOCAL_NETWORK_INFO, async (event) => {
     assertAllowedSender(event, IPC_CHANNELS.GET_LOCAL_NETWORK_INFO);
     return getLocalNetworkInfo();
   });

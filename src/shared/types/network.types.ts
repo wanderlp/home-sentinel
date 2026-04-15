@@ -4,6 +4,9 @@ export interface LocalNetworkInfo {
   mac: string;
   interfaceName: string;
   subnet: string;
+  connectionType: 'wifi' | 'ethernet' | 'unknown';
+  publicIp: string;
+  uptimeSeconds: number;
 }
 
 export interface NetworkAdapterDetail {
