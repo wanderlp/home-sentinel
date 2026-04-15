@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DeviceService } from '../../core/services/DeviceService';
 import type { WindowState } from '../../shared/types';
+import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 import log from '../../core/logger';
 
 let mainWindow: BrowserWindow | null = null;
@@ -41,14 +42,6 @@ function sanitizeCoordinate(value: unknown): number | undefined {
 
 function readWindowState(): PersistedWindowState {
   try {
-    if (!fs.existsSync(windowStateFilePath)) {
-      return {
-        version: windowStateVersion,
-        ...defaultWindowBounds,
-        isMaximized: false
-      };
-    }
-
     const content = fs.readFileSync(windowStateFilePath, 'utf-8');
     const parsed = JSON.parse(content) as Partial<PersistedWindowState>;
 
@@ -121,7 +114,7 @@ function getWindowState(window: BrowserWindow): WindowState {
 }
 
 function notifyWindowState(window: BrowserWindow): void {
-  window.webContents.send('window-state-changed', getWindowState(window));
+  window.webContents.send(IPC_CHANNELS.WINDOW_STATE_CHANGED, getWindowState(window));
 }
 
 function registerWindowEvents(window: BrowserWindow): void {
@@ -163,14 +156,15 @@ function createMainWindow(): BrowserWindow {
 
     window.show();
     notifyWindowState(window);
-    window.webContents.send('app-status-changed', 'ready');
+    window.webContents.send(IPC_CHANNELS.APP_STATUS_CHANGED, 'ready');
     log.info('[Main] Estado de la app notificado al renderer: ready');
   });
 
-  if (isDevelopment) {
-    void window.loadURL('http://127.0.0.1:5173');
+  const rendererUrl = process.env['ELECTRON_RENDERER_URL'];
+  if (rendererUrl) {
+    void window.loadURL(rendererUrl);
   } else {
-    void window.loadFile(path.join(__dirname, '../../renderer/index.html'));
+    void window.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
   return window;
@@ -184,8 +178,8 @@ function assertAllowedSender(event: Electron.IpcMainInvokeEvent, channel: string
 }
 
 function registerIpcHandlers(): void {
-  ipcMain.handle('scan-devices', async (event) => {
-    assertAllowedSender(event, 'scan-devices');
+  ipcMain.handle(IPC_CHANNELS.SCAN_DEVICES, async (event) => {
+    assertAllowedSender(event, IPC_CHANNELS.SCAN_DEVICES);
     try {
       return await deviceService.scanAndDetect();
     } catch (error) {
@@ -195,13 +189,13 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('window:minimize', (event) => {
-    assertAllowedSender(event, 'window:minimize');
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, (event) => {
+    assertAllowedSender(event, IPC_CHANNELS.WINDOW_MINIMIZE);
     BrowserWindow.fromWebContents(event.sender)?.minimize();
   });
 
-  ipcMain.handle('window:toggle-maximize', (event) => {
-    assertAllowedSender(event, 'window:toggle-maximize');
+  ipcMain.handle(IPC_CHANNELS.WINDOW_TOGGLE_MAXIMIZE, (event) => {
+    assertAllowedSender(event, IPC_CHANNELS.WINDOW_TOGGLE_MAXIMIZE);
     const window = BrowserWindow.fromWebContents(event.sender);
 
     if (!window) {
@@ -216,13 +210,13 @@ function registerIpcHandlers(): void {
     window.maximize();
   });
 
-  ipcMain.handle('window:close', (event) => {
-    assertAllowedSender(event, 'window:close');
+  ipcMain.handle(IPC_CHANNELS.WINDOW_CLOSE, (event) => {
+    assertAllowedSender(event, IPC_CHANNELS.WINDOW_CLOSE);
     BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
-  ipcMain.handle('window:get-state', (event) => {
-    assertAllowedSender(event, 'window:get-state');
+  ipcMain.handle(IPC_CHANNELS.WINDOW_GET_STATE, (event) => {
+    assertAllowedSender(event, IPC_CHANNELS.WINDOW_GET_STATE);
     const window = BrowserWindow.fromWebContents(event.sender);
 
     if (!window) {

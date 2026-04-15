@@ -19,19 +19,16 @@ Antes de hacer commit, revisar todos los cambios pendientes y evaluar si pertene
 ## Comandos
 
 ```bash
-# Desarrollo (renderer con Vite + Electron, se ejecutan en paralelo)
+# Desarrollo (electron-vite inicia el renderer y Electron en paralelo con HMR)
 npm run dev
 
-# Build de producción
+# Build de producción (salida en out/)
 npm run build
 
 # Verificación de tipos en los tres tsconfig (main, preload, renderer)
 npm run typecheck
 
-# Compilar solo los procesos main/preload
-npm run build:main
-
-# Limpiar dist/
+# Limpiar out/
 npm run clean
 ```
 
@@ -60,12 +57,14 @@ La app sigue el modelo de seguridad estándar de Electron:
 
 Todos los comandos del scanner usan utilidades de shell de Windows (`ping`, `arp`, `nslookup`). No intentar hacer el escaneo multiplataforma sin reemplazar estas llamadas.
 
-### Configuración de TypeScript
+### Bundler: electron-vite
 
-Tres archivos tsconfig separados, cada uno compilado de forma independiente:
-- `tsconfig.main.json` → salida CommonJS para el proceso principal de Electron + `src/core/**`
-- `tsconfig.preload.json` → preload script
-- `tsconfig.renderer.json` → ESNext/DOM para el renderer React
+El proyecto usa `electron-vite` (configurado en `electron.vite.config.ts`). electron-vite reemplaza el flujo anterior de `tsc` para main/preload + `vite` independiente para renderer:
+- Bundlea main, preload y renderer en un solo comando (`npm run dev` / `npm run build`)
+- Salida en `out/` (main → `out/main/`, preload → `out/preload/`, renderer → `out/renderer/`)
+- El preload es **bundleado** por electron-vite, por lo que puede importar módulos locales sin problema de sandbox
+
+Los tres tsconfigs (`tsconfig.main.json`, `tsconfig.preload.json`, `tsconfig.renderer.json`) se usan **solo para `npm run typecheck`** — electron-vite transpila de forma independiente con esbuild.
 
 ### Tipos compartidos
 
@@ -73,6 +72,7 @@ Tres archivos tsconfig separados, cada uno compilado de forma independiente:
 
 ## Restricciones clave
 
-- La base de datos SQLite vive en `data/home-sentinel.db` en la raíz del proyecto, no en `dist/`.
-- El renderer carga desde `http://127.0.0.1:5173` en desarrollo y desde el archivo compilado en producción; el proceso principal usa `app.isPackaged` para decidir.
+- La base de datos SQLite vive en `data/home-sentinel.db` en la raíz del proyecto, no en `out/`.
+- El renderer carga desde `process.env['ELECTRON_RENDERER_URL']` (inyectado por electron-vite) en desarrollo y desde `out/renderer/index.html` en producción; el proceso principal usa `app.isPackaged` para decidir.
 - La ventana no tiene marco nativo; la barra de título personalizada con su región de arrastre y los controles de ventana están implementados en `App.tsx` y se comunican mediante el IPC `window.homeSentinel.windowControls`.
+- El preload **puede importar módulos locales** porque electron-vite lo bundlea. Los canales IPC usan `IPC_CHANNELS` de `src/shared/constants/ipc-channels.ts` tanto en main como en preload.
