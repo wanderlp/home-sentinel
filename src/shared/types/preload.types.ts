@@ -1,5 +1,5 @@
 import type { AppStatus } from './app.types';
-import type { DetectedDevice, LocalNetworkInfo } from './network.types';
+import type { DetectedDevice, LocalNetworkInfo, NetworkAdapterDetail } from './network.types';
 import type { WindowState } from './app.types';
 
 export interface WindowControls {
@@ -13,6 +13,7 @@ export interface WindowControls {
 export interface HomeSentinelAPI {
   scanDevices: () => Promise<DetectedDevice[]>;
   getLocalNetworkInfo: () => Promise<LocalNetworkInfo>;
+  getNetworkAdapterDetail: (interfaceName: string) => Promise<NetworkAdapterDetail>;
   onStatusChange: (callback: (status: AppStatus) => void) => () => void;
   windowControls: WindowControls;
 }

@@ -6,6 +6,19 @@ export interface LocalNetworkInfo {
   subnet: string;
 }
 
+export interface NetworkAdapterDetail {
+  gateway: string;
+  dns: string[];
+  dhcp: boolean;
+  description: string;
+  // Solo para WiFi
+  ssid?: string;
+  signal?: number;
+  radioType?: string;
+  channel?: string;
+  authentication?: string;
+}
+
 export type DeviceType =
   | 'router'
   | 'pc'

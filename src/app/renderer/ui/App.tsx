@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, SVGProps } from 'react';
-import type { HomeSentinelAPI, LocalNetworkInfo } from '../../../shared/types';
+import type { HomeSentinelAPI, LocalNetworkInfo, NetworkAdapterDetail } from '../../../shared/types';
 import { useAppStore } from '../store/useAppStore';
 
 type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
@@ -25,6 +25,10 @@ export function App() {
   const [typeFilter, setTypeFilter] = useState<string>('todos');
   const [selectedDeviceKey, setSelectedDeviceKey] = useState<string | null>(null);
   const [localInfo, setLocalInfo] = useState<LocalNetworkInfo | null>(null);
+  const [adapterDetail, setAdapterDetail] = useState<NetworkAdapterDetail | null>(null);
+  const [adapterPopupOpen, setAdapterPopupOpen] = useState(false);
+  const [adapterDetailLoading, setAdapterDetailLoading] = useState(false);
+  const adapterPopupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const api = window.homeSentinel;
@@ -86,6 +90,31 @@ export function App() {
     modificados: devices.filter((device) => device.modificado).length,
     conocidos: devices.filter((device) => device.conocido && !device.nuevo).length
   };
+
+  useEffect(() => {
+    if (!adapterPopupOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (adapterPopupRef.current && !adapterPopupRef.current.contains(e.target as Node)) {
+        setAdapterPopupOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [adapterPopupOpen]);
+
+  async function handleOpenAdapterDetail(): Promise<void> {
+    if (!localInfo) return;
+    setAdapterPopupOpen((prev) => !prev);
+    if (!adapterDetail && !adapterDetailLoading) {
+      setAdapterDetailLoading(true);
+      try {
+        const detail = await window.homeSentinel.getNetworkAdapterDetail(localInfo.interfaceName);
+        setAdapterDetail(detail);
+      } finally {
+        setAdapterDetailLoading(false);
+      }
+    }
+  }
 
   async function handleScan(): Promise<void> {
     setScanning(true);
@@ -157,7 +186,70 @@ export function App() {
                 <LocalInfoField label="Hostname" value={localInfo?.hostname ?? '—'} />
                 <LocalInfoField label="IP local" value={localInfo?.ip ?? '—'} />
                 <LocalInfoField label="MAC" value={localInfo?.mac ?? '—'} />
-                <LocalInfoField label="Adaptador" value={localInfo?.interfaceName ?? '—'} />
+
+                {/* Adaptador con botón ⓘ */}
+                <div className="relative">
+                  <span className="text-[0.75rem] uppercase tracking-[0.1em] text-slate-500">Adaptador</span>
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <strong className="break-all text-[0.88rem] font-medium text-slate-200">
+                      {localInfo?.interfaceName ?? '—'}
+                    </strong>
+                    {localInfo ? (
+                      <button
+                        type="button"
+                        aria-label="Ver detalles del adaptador"
+                        onClick={() => void handleOpenAdapterDetail()}
+                        className="shrink-0 text-slate-500 transition hover:text-sky-300"
+                        style={noDragRegionStyle}
+                      >
+                        <InfoCircleIcon className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {/* Popup */}
+                  {adapterPopupOpen ? (
+                    <div
+                      ref={adapterPopupRef}
+                      className="absolute left-0 top-full z-50 mt-2 w-72 rounded-[14px] border border-sky-200/20 bg-[linear-gradient(180deg,rgba(13,26,46,0.98)_0%,rgba(8,18,34,0.98)_100%)] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+                      style={noDragRegionStyle}
+                    >
+                      <p className="mb-3 text-[0.72rem] uppercase tracking-[0.18em] text-sky-300">
+                        {adapterDetail?.ssid ? 'Red Wi-Fi' : 'Adaptador de red'}
+                      </p>
+
+                      {adapterDetailLoading ? (
+                        <p className="text-[0.85rem] text-slate-400">Cargando...</p>
+                      ) : adapterDetail ? (
+                        <div className="grid gap-2.5">
+                          {adapterDetail.ssid ? (
+                            <PopupField label="Red (SSID)" value={adapterDetail.ssid} />
+                          ) : null}
+                          {adapterDetail.signal !== undefined ? (
+                            <PopupField label="Señal" value={`${adapterDetail.signal}%`} accent={signalAccent(adapterDetail.signal)} />
+                          ) : null}
+                          {adapterDetail.radioType ? (
+                            <PopupField label="Tipo de radio" value={adapterDetail.radioType} />
+                          ) : null}
+                          {adapterDetail.channel ? (
+                            <PopupField label="Canal" value={adapterDetail.channel} />
+                          ) : null}
+                          {adapterDetail.authentication ? (
+                            <PopupField label="Autenticación" value={adapterDetail.authentication} />
+                          ) : null}
+                          <PopupField label="Gateway" value={adapterDetail.gateway} />
+                          <PopupField
+                            label="DNS"
+                            value={adapterDetail.dns.length > 0 ? adapterDetail.dns.join(', ') : 'No disponible'}
+                          />
+                          <PopupField label="DHCP" value={adapterDetail.dhcp ? 'Habilitado' : 'IP estática'} />
+                          <PopupField label="Descripción" value={adapterDetail.description} />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
                 <LocalInfoField label="Máscara" value={localInfo?.subnet ?? '—'} />
               </div>
             </article>
@@ -363,6 +455,31 @@ export function App() {
       </section>
     </section>
     </main>
+  );
+}
+
+function signalAccent(signal: number): string {
+  if (signal >= 70) return 'text-emerald-300';
+  if (signal >= 40) return 'text-amber-300';
+  return 'text-rose-300';
+}
+
+function PopupField({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="shrink-0 text-[0.76rem] text-slate-500">{label}</span>
+      <span className={`text-right text-[0.82rem] font-medium ${accent ?? 'text-slate-200'}`}>{value}</span>
+    </div>
+  );
+}
+
+function InfoCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.5" />
+      <path d="M8 7.5v4" />
+      <circle cx="8" cy="5.25" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
   );
 }
 

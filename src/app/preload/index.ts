@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppStatus, HomeSentinelAPI, LocalNetworkInfo, WindowState } from '../../shared/types';
+import type { AppStatus, HomeSentinelAPI, LocalNetworkInfo, NetworkAdapterDetail, WindowState } from '../../shared/types';
 import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 
 // electron-vite bundlea este archivo junto con sus imports locales, por lo que
@@ -15,6 +15,8 @@ function createIpcListener<T>(channel: string, callback: (data: T) => void): () 
 const api: HomeSentinelAPI = {
   scanDevices: () => ipcRenderer.invoke(IPC_CHANNELS.SCAN_DEVICES),
   getLocalNetworkInfo: (): Promise<LocalNetworkInfo> => ipcRenderer.invoke(IPC_CHANNELS.GET_LOCAL_NETWORK_INFO),
+  getNetworkAdapterDetail: (interfaceName: string): Promise<NetworkAdapterDetail> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_NETWORK_ADAPTER_DETAIL, interfaceName),
 
   onStatusChange: (callback: (status: AppStatus) => void) =>
     createIpcListener(IPC_CHANNELS.APP_STATUS_CHANGED, callback),

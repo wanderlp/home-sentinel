@@ -3,7 +3,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DeviceService } from '../../core/services/DeviceService';
-import type { LocalNetworkInfo, WindowState } from '../../shared/types';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import type { LocalNetworkInfo, NetworkAdapterDetail, WindowState } from '../../shared/types';
+
+const execFileAsync = promisify(execFile);
 import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 import log from '../../core/logger';
 
@@ -200,10 +204,97 @@ function getLocalNetworkInfo(): LocalNetworkInfo {
   return { hostname, ip: 'No disponible', mac: 'No disponible', interfaceName: 'No disponible', subnet: 'No disponible' };
 }
 
+async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAdapterDetail> {
+  const detail: NetworkAdapterDetail = {
+    gateway: 'No disponible',
+    dns: [],
+    dhcp: false,
+    description: interfaceName
+  };
+
+  try {
+    // ipconfig /all para gateway, DNS, DHCP y descripción
+    const { stdout: ipconfigOut } = await execFileAsync('ipconfig', ['/all'], { encoding: 'utf8' });
+    const blocks = ipconfigOut.split(/\r?\n\r?\n/);
+
+    for (const block of blocks) {
+      // Buscar el bloque que corresponde al adaptador por nombre
+      if (!block.toLowerCase().includes(interfaceName.toLowerCase())) continue;
+
+      const field = (pattern: RegExp): string => {
+        const m = block.match(pattern);
+        return m ? m[1].trim().replace(/\s+/g, ' ') : '';
+      };
+
+      const desc = field(/Descripci[oó]n[.\s]*:\s*(.+)/i) || field(/Description[.\s]*:\s*(.+)/i);
+      if (desc) detail.description = desc;
+
+      const gw = field(/Puerta de enlace predeterminada[.\s]*:\s*([\d.]+)/i) ||
+                 field(/Default Gateway[.\s]*:\s*([\d.]+)/i);
+      if (gw) detail.gateway = gw;
+
+      const dhcpVal = field(/DHCP habilitado[.\s]*:\s*(\S+)/i) || field(/DHCP Enabled[.\s]*:\s*(\S+)/i);
+      detail.dhcp = /s[ií]/i.test(dhcpVal) || /yes/i.test(dhcpVal);
+
+      // DNS: puede haber múltiples líneas — buscar todas las IPs en líneas de DNS
+      const dnsMatch = block.match(/Servidores DNS[.\s]*:(.+?)(?=\r?\n\s*\w|\r?\n\r?\n|$)/is) ||
+                       block.match(/DNS Servers[.\s]*:(.+?)(?=\r?\n\s*\w|\r?\n\r?\n|$)/is);
+      if (dnsMatch) {
+        detail.dns = [...dnsMatch[1].matchAll(/\b(\d{1,3}(?:\.\d{1,3}){3})\b/g)].map(m => m[1]);
+      }
+
+      break;
+    }
+  } catch {
+    // Silenciar errores de ipconfig
+  }
+
+  // Intentar netsh wlan para datos WiFi
+  try {
+    const { stdout: wlanOut } = await execFileAsync('netsh', ['wlan', 'show', 'interfaces'], { encoding: 'utf8' });
+    const blocks = wlanOut.split(/\r?\n\s*\r?\n/);
+
+    for (const block of blocks) {
+      if (!block.toLowerCase().includes(interfaceName.toLowerCase())) continue;
+
+      const wfield = (pattern: RegExp): string => {
+        const m = block.match(pattern);
+        return m ? m[1].trim() : '';
+      };
+
+      const ssid = wfield(/^\s+SSID\s*:\s*(.+)$/im);
+      if (ssid) detail.ssid = ssid;
+
+      const signal = wfield(/Se[ñn]al\s*:\s*(\d+)%/i) || wfield(/Signal\s*:\s*(\d+)%/i);
+      if (signal) detail.signal = parseInt(signal, 10);
+
+      const radio = wfield(/Tipo de radio\s*:\s*(.+)/i) || wfield(/Radio type\s*:\s*(.+)/i);
+      if (radio) detail.radioType = radio;
+
+      const channel = wfield(/Canal\s*:\s*(\S+)/i) || wfield(/Channel\s*:\s*(\S+)/i);
+      if (channel) detail.channel = channel;
+
+      const auth = wfield(/Autenticaci[oó]n\s*:\s*(.+)/i) || wfield(/Authentication\s*:\s*(.+)/i);
+      if (auth) detail.authentication = auth;
+
+      break;
+    }
+  } catch {
+    // Si netsh falla (adaptador cableado o sin WiFi) se ignora
+  }
+
+  return detail;
+}
+
 function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_LOCAL_NETWORK_INFO, (event) => {
     assertAllowedSender(event, IPC_CHANNELS.GET_LOCAL_NETWORK_INFO);
     return getLocalNetworkInfo();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GET_NETWORK_ADAPTER_DETAIL, async (event, interfaceName: string) => {
+    assertAllowedSender(event, IPC_CHANNELS.GET_NETWORK_ADAPTER_DETAIL);
+    return getNetworkAdapterDetail(interfaceName);
   });
 
   ipcMain.handle(IPC_CHANNELS.SCAN_DEVICES, async (event) => {
