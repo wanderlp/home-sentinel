@@ -183,12 +183,19 @@ export function App() {
             {/* Tarjeta grande: info de red local */}
             <article className="flex min-w-[260px] flex-1 flex-col gap-4 rounded-[20px] border border-sky-200/15 bg-[linear-gradient(180deg,rgba(13,24,40,0.85)_0%,rgba(9,18,32,0.85)_100%)] p-5">
               <div className="flex items-center gap-2.5">
-                <NetworkIcon className="h-4 w-4 shrink-0 text-sky-400" />
+                <ConnectionIcon type={localInfo?.connectionType ?? 'unknown'} className="h-4 w-4 shrink-0 text-sky-400" />
                 <span className="text-[0.78rem] uppercase tracking-[0.18em] text-sky-300">Este equipo</span>
+                {localInfo ? (
+                  <span className="ml-auto rounded-full border border-sky-200/15 px-2 py-0.5 text-[0.7rem] text-sky-400">
+                    {localInfo.connectionType === 'wifi' ? 'Wi-Fi' : localInfo.connectionType === 'ethernet' ? 'Ethernet' : '—'}
+                  </span>
+                ) : null}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <LocalInfoField label="Hostname" value={localInfo?.hostname ?? '—'} />
                 <LocalInfoField label="IP local" value={localInfo?.ip ?? '—'} />
+                <LocalInfoField label="IP pública" value={localInfo?.publicIp ?? '—'} />
+                <LocalInfoField label="Activo desde" value={localInfo ? formatUptime(localInfo.uptimeSeconds) : '—'} />
                 <LocalInfoField label="MAC" value={localInfo?.mac ?? '—'} />
 
                 {/* Adaptador con botón ⓘ */}
@@ -533,6 +540,40 @@ function LocalInfoField({ label, value }: { label: string; value: string }) {
       <strong className="mt-0.5 block break-all text-[0.88rem] font-medium text-slate-200">{value}</strong>
     </div>
   );
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(' ');
+}
+
+function ConnectionIcon({ type, className }: { type: 'wifi' | 'ethernet' | 'unknown'; className?: string }) {
+  if (type === 'wifi') {
+    return (
+      <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 5.5C4 2.5 12 2.5 15 5.5" />
+        <path d="M3 8c1.4-1.4 9.6-1.4 10 0" />
+        <path d="M5.5 10.5c.7-.7 5.3-.7 5 0" />
+        <circle cx="8" cy="13" r="0.8" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (type === 'ethernet') {
+    return (
+      <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="12" height="8" rx="1.5" />
+        <path d="M5 4V2M8 4V2M11 4V2" />
+        <path d="M5 12v2M8 12v2M11 12v2" />
+      </svg>
+    );
+  }
+  return <NetworkIcon className={className} />;
 }
 
 function NetworkIcon({ className }: { className?: string }) {
