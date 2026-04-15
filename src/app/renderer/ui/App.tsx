@@ -476,9 +476,6 @@ export function App() {
               Estado: <span className="text-slate-200">{isScanning ? 'escaneando...' : status}</span>
             </span>
           </div>
-          {localInfo ? (
-            <span className="text-[0.73rem] text-slate-500">{localInfo.ip}</span>
-          ) : null}
         </footer>
       </section>
     </section>
