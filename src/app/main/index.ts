@@ -220,8 +220,11 @@ async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAd
     const blocks = ipconfigOut.split(/\r?\n\r?\n/);
 
     for (const block of blocks) {
-      // Buscar el bloque que corresponde al adaptador por nombre
-      if (!block.toLowerCase().includes(interfaceName.toLowerCase())) continue;
+      // Verificar que la cabecera del bloque termina exactamente con "<interfaceName>:"
+      // para evitar tomar adaptadores virtuales que contienen el mismo nombre parcialmente
+      const headerLine = block.trimStart().split(/\r?\n/)[0] ?? '';
+      const escapedName = interfaceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (!new RegExp(`${escapedName}\\s*:`, 'i').test(headerLine)) continue;
 
       const field = (pattern: RegExp): string => {
         const m = block.match(pattern);
@@ -257,7 +260,10 @@ async function getNetworkAdapterDetail(interfaceName: string): Promise<NetworkAd
     const blocks = wlanOut.split(/\r?\n\s*\r?\n/);
 
     for (const block of blocks) {
-      if (!block.toLowerCase().includes(interfaceName.toLowerCase())) continue;
+      // Buscar el bloque cuyo campo Nombre/Name coincide exactamente con el adaptador
+      if (!/^\s+(?:Nombre|Name)\s*:\s*/im.test(block)) continue;
+      const nameMatch = block.match(/^\s+(?:Nombre|Name)\s*:\s*(.+)$/im);
+      if (!nameMatch || nameMatch[1].trim().toLowerCase() !== interfaceName.toLowerCase()) continue;
 
       const wfield = (pattern: RegExp): string => {
         const m = block.match(pattern);
