@@ -50,9 +50,14 @@ export class DeviceService {
 
     await this.repository.saveDevices(classifiedDevices);
 
-    const nuevos = detectedDevices.filter((d) => d.nuevo).length;
-    const modificados = detectedDevices.filter((d) => d.modificado).length;
-    const conocidos = detectedDevices.filter((d) => d.conocido && !d.nuevo).length;
+    const { nuevos, modificados, conocidos } = detectedDevices.reduce(
+      (counts, d) => ({
+        nuevos: counts.nuevos + (d.nuevo ? 1 : 0),
+        modificados: counts.modificados + (d.modificado ? 1 : 0),
+        conocidos: counts.conocidos + (d.conocido && !d.nuevo ? 1 : 0)
+      }),
+      { nuevos: 0, modificados: 0, conocidos: 0 }
+    );
     log.info(`[DeviceService] Detección completada — total: ${detectedDevices.length} | nuevos: ${nuevos} | modificados: ${modificados} | conocidos: ${conocidos}`);
 
     return detectedDevices;
@@ -61,23 +66,19 @@ export class DeviceService {
     }
   }
 
+  private getDeviceKey(device: { mac?: string; ip: string }): string {
+    return device.mac ? `mac:${device.mac}` : `ip:${device.ip}`;
+  }
+
   private createKnownDeviceMap(devices: StoredDevice[]): Map<string, StoredDevice> {
-    const map = new Map<string, StoredDevice>();
-    for (const device of devices) {
-      if (device.mac) {
-        map.set(`mac:${device.mac}`, device);
-      } else {
-        map.set(`ip:${device.ip}`, device);
-      }
-    }
-    return map;
+    return new Map(devices.map((device) => [this.getDeviceKey(device), device]));
   }
 
   private mapDetectedDevice(
     device: Device,
     knownDevicesMap: Map<string, StoredDevice>
   ): DetectedDevice {
-    const lookupKey = device.mac ? `mac:${device.mac}` : `ip:${device.ip}`;
+    const lookupKey = this.getDeviceKey(device);
     const knownDevice = knownDevicesMap.get(lookupKey);
     const isKnown = Boolean(knownDevice);
     const now = new Date().toISOString();

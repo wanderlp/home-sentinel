@@ -140,19 +140,16 @@ async function ensureColumnExists(
   columnName: string,
   columnDefinition: string
 ): Promise<void> {
-  const columns = await allRows<{ name: string }>(
-    database,
-    `PRAGMA table_info(${tableName})`
-  );
-
-  const hasColumn = columns.some((column) => column.name === columnName);
-
-  if (hasColumn) {
-    return;
+  try {
+    await runStatement(
+      database,
+      `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`
+    );
+  } catch (error) {
+    // SQLite lanza error "duplicate column name" si la columna ya existe — se ignora
+    const message = error instanceof Error ? error.message : '';
+    if (!message.includes('duplicate column name')) {
+      throw error;
+    }
   }
-
-  await runStatement(
-    database,
-    `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`
-  );
 }
