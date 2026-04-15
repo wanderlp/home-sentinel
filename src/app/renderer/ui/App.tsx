@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, SVGProps } from 'react';
 import type { HomeSentinelAPI, LocalNetworkInfo, NetworkAdapterDetail } from '../../../shared/types';
 import { useAppStore } from '../store/useAppStore';
+import { PORT_DESCRIPTIONS, PORT_LABELS } from './port-info';
 
 type StatusFilter = 'todos' | 'nuevos' | 'modificados' | 'conocidos';
 
@@ -26,6 +27,7 @@ export function App() {
   const [selectedDeviceKey, setSelectedDeviceKey] = useState<string | null>(null);
   const [localInfo, setLocalInfo] = useState<LocalNetworkInfo | null>(null);
   const [adapterDetail, setAdapterDetail] = useState<NetworkAdapterDetail | null>(null);
+  const [localOpenPorts, setLocalOpenPorts] = useState<number[] | null>(null);
   const [adapterPopupOpen, setAdapterPopupOpen] = useState(false);
   const [adapterDetailLoading, setAdapterDetailLoading] = useState(false);
   const adapterPopupRef = useRef<HTMLDivElement>(null);
@@ -52,9 +54,11 @@ export function App() {
     });
 
     void api.getLocalNetworkInfo().then((info) => {
-      if (isMounted) {
-        setLocalInfo(info);
-      }
+      if (!isMounted) return;
+      setLocalInfo(info);
+      void api.getLocalOpenPorts(info.ip).then((ports) => {
+        if (isMounted) setLocalOpenPorts(ports);
+      });
     });
 
     const unsubscribeWindow = api.windowControls.onStateChange((state) => {
@@ -251,6 +255,23 @@ export function App() {
                   ) : null}
                 </div>
 
+              </div>
+              {/* Puertos abiertos del equipo local */}
+              <div>
+                <span className="mb-2 block text-[0.75rem] uppercase tracking-[0.1em] text-slate-500">
+                  Puertos abiertos
+                </span>
+                {localOpenPorts === null ? (
+                  <span className="text-[0.82rem] text-slate-500">Escaneando...</span>
+                ) : localOpenPorts.length === 0 ? (
+                  <span className="text-[0.82rem] text-slate-500">Ninguno detectado</span>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {localOpenPorts.map((port) => (
+                      <PortChip key={port} port={port} />
+                    ))}
+                  </div>
+                )}
               </div>
             </article>
 
@@ -455,6 +476,28 @@ export function App() {
       </section>
     </section>
     </main>
+  );
+}
+
+
+function PortChip({ port }: { port: number }) {
+  return (
+    <span className="group relative inline-flex">
+      <span className="inline-flex cursor-default items-center gap-1 rounded-md border border-sky-200/15 bg-sky-300/[0.07] px-2 py-0.5 text-[0.78rem] font-medium text-sky-200 transition group-hover:border-sky-300/30 group-hover:bg-sky-300/[0.13]">
+        <span>{port}</span>
+        {PORT_LABELS[port] ? (
+          <span className="text-sky-400/70">{PORT_LABELS[port]}</span>
+        ) : null}
+      </span>
+      {PORT_DESCRIPTIONS[port] ? (
+        <span className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-64 rounded-[10px] border border-sky-200/20 bg-[rgba(10,20,38,0.97)] px-3 py-2.5 text-[0.78rem] leading-5 text-slate-300 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-opacity duration-150 group-hover:opacity-100">
+          <span className="mb-1 block text-[0.7rem] font-semibold uppercase tracking-wider text-sky-400">
+            {PORT_LABELS[port] ?? `Puerto ${port}`}
+          </span>
+          {PORT_DESCRIPTIONS[port]}
+        </span>
+      ) : null}
+    </span>
   );
 }
 

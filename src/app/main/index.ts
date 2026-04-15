@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DeviceService } from '../../core/services/DeviceService';
+import { PortScanner } from '../../core/scanner/PortScanner';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { LocalNetworkInfo, NetworkAdapterDetail, WindowState } from '../../shared/types';
@@ -15,6 +16,7 @@ let mainWindow: BrowserWindow | null = null;
 
 const isDevelopment = !app.isPackaged;
 const deviceService = new DeviceService();
+const portScanner = new PortScanner();
 const windowStateVersion = 3;
 const defaultWindowBounds = {
   width: 860,
@@ -295,6 +297,12 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_NETWORK_ADAPTER_DETAIL, async (event, interfaceName: string) => {
     assertAllowedSender(event, IPC_CHANNELS.GET_NETWORK_ADAPTER_DETAIL);
     return getNetworkAdapterDetail(interfaceName);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GET_LOCAL_OPEN_PORTS, async (event, ip: string) => {
+    assertAllowedSender(event, IPC_CHANNELS.GET_LOCAL_OPEN_PORTS);
+    const [result] = await portScanner.scanDevices([{ ip, activo: true }]);
+    return result?.openPorts ?? [];
   });
 
   ipcMain.handle(IPC_CHANNELS.SCAN_DEVICES, async (event) => {

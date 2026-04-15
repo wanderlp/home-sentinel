@@ -14,6 +14,7 @@ export interface HomeSentinelAPI {
   scanDevices: () => Promise<DetectedDevice[]>;
   getLocalNetworkInfo: () => Promise<LocalNetworkInfo>;
   getNetworkAdapterDetail: (interfaceName: string) => Promise<NetworkAdapterDetail>;
+  getLocalOpenPorts: (ip: string) => Promise<number[]>;
   onStatusChange: (callback: (status: AppStatus) => void) => () => void;
   windowControls: WindowControls;
 }

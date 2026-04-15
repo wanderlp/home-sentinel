@@ -17,6 +17,8 @@ const api: HomeSentinelAPI = {
   getLocalNetworkInfo: (): Promise<LocalNetworkInfo> => ipcRenderer.invoke(IPC_CHANNELS.GET_LOCAL_NETWORK_INFO),
   getNetworkAdapterDetail: (interfaceName: string): Promise<NetworkAdapterDetail> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_NETWORK_ADAPTER_DETAIL, interfaceName),
+  getLocalOpenPorts: (ip: string): Promise<number[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_LOCAL_OPEN_PORTS, ip),
 
   onStatusChange: (callback: (status: AppStatus) => void) =>
     createIpcListener(IPC_CHANNELS.APP_STATUS_CHANGED, callback),
