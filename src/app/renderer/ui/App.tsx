@@ -222,7 +222,7 @@ export function App() {
                   {adapterPopupOpen ? (
                     <div
                       ref={adapterPopupRef}
-                      className="absolute left-0 top-full z-50 mt-2 max-h-80 w-72 overflow-y-auto rounded-[14px] border border-sky-200/20 bg-[linear-gradient(180deg,rgba(13,26,46,0.98)_0%,rgba(8,18,34,0.98)_100%)] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+                      className="absolute left-0 top-full z-50 mt-2 max-h-64 w-80 overflow-y-auto rounded-[14px] border border-sky-200/20 bg-[linear-gradient(180deg,rgba(13,26,46,0.98)_0%,rgba(8,18,34,0.98)_100%)] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
                       style={noDragRegionStyle}
                     >
                       <p className="mb-3 text-[0.72rem] uppercase tracking-[0.18em] text-sky-300">
