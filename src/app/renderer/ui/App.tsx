@@ -238,6 +238,7 @@ export function App() {
                             <PopupField label="Autenticación" value={adapterDetail.authentication} />
                           ) : null}
                           <PopupField label="Gateway" value={adapterDetail.gateway} />
+                          <PopupField label="Máscara de subred" value={localInfo?.subnet ?? '—'} />
                           <PopupField
                             label="DNS"
                             value={adapterDetail.dns.length > 0 ? adapterDetail.dns.join(', ') : 'No disponible'}
@@ -250,7 +251,6 @@ export function App() {
                   ) : null}
                 </div>
 
-                <LocalInfoField label="Máscara" value={localInfo?.subnet ?? '—'} />
               </div>
             </article>
 
